@@ -9,11 +9,11 @@
             <ul class="app-breadcrumb breadcrumb">
                 <a class="btn btn-primary icon-btn" href="{{route('add_coupen')}}"><i class="fa fa-plus"></i> Add Coupen</a>
             </ul>
-        
+
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -62,24 +62,24 @@
                                         <td>{{$offercoupen->coupen_discount}}</td>
                                         <!-- <td>{{$offercoupen->coupen_location}}</td> -->
                                         <td>
-                                           <?php 
-                                            
+                                           <?php
+
                                             $pros = json_decode($offercoupen->coupen_product);
                                              foreach($pros as $key => $dt)
                                              {
                                                  echo $product[$dt]." , ";
                                              }
-                                         
-                                        
+
+
                                             ?>
                                         </td>
                                         <td>{{$offercoupen->with_product_discount}}</td>
                                         <td><?php echo $offercoupen->coupen_discription; ?></td>
 
-                                       
+
                                         <td class="text-center">
                                            <a href="{{route('offercoupenUpdate',$offercoupen->coupen_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
-                                            <a href="{{route('offercoupenDelete',$offercoupen->coupen_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a> 
+                                            <a href="{{route('offercoupenDelete',$offercoupen->coupen_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                         </td>
                                     </tr>
                                     @php $i++ @endphp
@@ -92,5 +92,5 @@
             </div>
         </div>
     </main>
- 
+
    @stop

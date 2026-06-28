@@ -14,7 +14,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -57,7 +57,7 @@
                                     @foreach($view_flash_data as $data)
                                     <tr>
                                         <td>{{$i}}.</td>
-                                        <td><img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="130px"></td>
+                                        <td><img src="{{ z_media_url($data->product_header_image, 'product') }}" width="130px"></td>
                                         <td>{{$data->product_title}}</td>
                                         <td>{{$data->start_date}}</td>
                                         <td>{{$data->end_date}}</td>

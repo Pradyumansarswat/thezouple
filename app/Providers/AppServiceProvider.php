@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
 use DB;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,7 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $mediaHelpers = app_path('Support/media.php');
+        if (file_exists($mediaHelpers)) {
+            require_once $mediaHelpers;
+        }
     }
 
     /**
@@ -24,11 +28,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Define constants from siteinfos table
         try {
-            $check_data = DB::table('siteinfos')->where('siteinfo_id',1)->get();
-            foreach($check_data as $data)
-            {
+            $check_data = DB::table('siteinfos')->where('siteinfo_id', 1)->get();
+            foreach ($check_data as $data) {
                 if (!defined('PHONE_NUMBNER')) define('PHONE_NUMBNER', $data->phone_number);
+                if (!defined('WHATSAPP_NUMBER')) define('WHATSAPP_NUMBER', isset($data->whatsapp_number) && $data->whatsapp_number ? $data->whatsapp_number : $data->phone_number);
                 if (!defined('FB_LINK')) define('FB_LINK', $data->facebook_url);
                 if (!defined('LINKEDIN_LINK')) define('LINKEDIN_LINK', $data->linkedin_url);
                 if (!defined('INSTA_LINK')) define('INSTA_LINK', $data->instagram_url);
@@ -42,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
                 if (!defined('DOLLARSHIPPINCHARGE')) define('DOLLARSHIPPINCHARGE', $data->dollar_shipping_charge);
                 if (!defined('EUROSHIPPINCHARGE')) define('EUROSHIPPINCHARGE', $data->euro_shipping_charge);
                 if (!defined('MINIMUMKG')) define('MINIMUMKG', $data->minimum_charge);
+                if (!defined('RECYCLE_CLEANUP_DAYS')) define('RECYCLE_CLEANUP_DAYS', isset($data->recycle_cleanup_days) ? $data->recycle_cleanup_days : 90);
                 if (!defined('WEBSITE_URL')) define('WEBSITE_URL', "https://thezouple.com");
             }
         } catch (\Exception $e) {
@@ -49,5 +55,11 @@ class AppServiceProvider extends ServiceProvider
         }
         
         if (!defined('PAGETITLE')) define('PAGETITLE', "The Zouple");
+
+        // Register HeaderComposer for header view
+        View::composer(
+            'front.layout.header',
+            \App\Http\View\Composers\HeaderComposer::class
+        );
     }
 }

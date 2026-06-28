@@ -14,7 +14,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -65,7 +65,7 @@
                                     @if($review->user_profile == "")
                                     <img src="{{URL::asset('public/front/images/user.jpg')}}" width="50px">
                                     @else
-                                    <img src="{{URL::asset('public/upload/review/'.$review->user_profile)}}" width="50px">
+                                    <img src="{{ z_media_url($review->user_profile, 'review') }}" width="50px">
                                     @endif
                                 </td>
 
@@ -78,7 +78,7 @@
                                     <h6> No Image Found </h6>
                                     @else
                                     @foreach($imgs as $val)
-                                    <img src="{{URL::asset('public/upload/review/'.$val)}}" width="50px">
+                                    <img src="{{ z_media_url($val, 'review') }}" width="50px">
                                     @endforeach
                                     @endif
                                 </td>
@@ -128,7 +128,7 @@
                                 <td class="text-center">
                                     <a href="{{route('reviewInformationUpdate',$review->review_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
 
-                                    <a href="{{route('reviewDelete',$review->review_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
+                                    <a href="{{route('reviewDelete',$review->review_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                 </td>
                             </tr>
                             @php $k++ @endphp

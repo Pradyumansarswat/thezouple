@@ -373,7 +373,7 @@
                 @foreach($wishs_lists as $wish)
                 <div class="col-12  py-4 col-sm-6 col-md-4 col-lg-12 d-flex">
                     <div class="col-4 p-0">
-                        <img src="{{URL::asset('public/upload/product/'.$wish->product_header_image)}}" alt="IMG" width="100%">
+                        <img src="{{ z_media_url($wish->product_header_image, 'product') }}" alt="IMG" width="100%">
                     </div>
 
                     <div class="col-8 pr-0">
@@ -453,7 +453,7 @@
                         <a href="{{url('product', $data->slug)}}">
                             <div class="card " style="border-radius: 15px; overflow: hidden;">
                                 <div class="card-body p-0 position-relative">
-                                    <img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="100%">
+                                    <img src="{{ z_media_url($data->product_header_image, 'product') }}" width="100%">
 
                                 </div>
 

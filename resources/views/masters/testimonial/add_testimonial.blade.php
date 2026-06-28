@@ -11,7 +11,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -54,7 +54,7 @@
                             <div class="col-sm-6">
                                 <div class="form-group">
                                     <label class="control-label"> Testimonial Image <span class="text-danger"> <b> * </b></span> <!-- <span class="text-danger">(Image Dimensions - 1920*700 Pixel *)</span> --></label>
-                                    <input class="form-control" type="file" name="image" accept="image/x-png,image/gif,image/jpeg" autofocus required>
+                                    <input class="form-control" type="file" name="image" accept="image/png,image/gif,image/jpeg,image/webp" autofocus required>
                                 </div>
                             </div>
                             

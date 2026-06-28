@@ -229,7 +229,7 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-		'Location' => Stevebauman\Location\Facades\Location::class,
+		'Location' => class_exists(\Stevebauman\Location\Facades\Location::class) ? \Stevebauman\Location\Facades\Location::class : \App\Support\LocationFallback::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
         
     ],

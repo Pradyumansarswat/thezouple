@@ -14,9 +14,40 @@ use Session;
 use App\Product;
 use App\Accessories;
 use App\Category;
+use App\Services\AdminMediaService;
+use App\Services\AdminRecycleBinService;
+use Schema;
 
 class ProductController extends Controller
 {
+    private function applyCurrentCartOwner($query, Request $request, $table = 'carts')
+    {
+        $ip = $request->ip();
+
+        if (Auth::check()) {
+            $userId = Auth::user()->id;
+
+            return $query->where(function ($ownerQuery) use ($table, $ip, $userId) {
+                $ownerQuery->where($table . '.user_id', $userId)
+                    ->orWhere(function ($guestQuery) use ($table, $ip) {
+                        $guestQuery->where($table . '.ip_address', $ip)
+                            ->where(function ($emptyUserQuery) use ($table) {
+                                $emptyUserQuery->whereNull($table . '.user_id')
+                                    ->orWhere($table . '.user_id', 0)
+                                    ->orWhere($table . '.user_id', '');
+                            });
+                    });
+            });
+        }
+
+        return $query->where($table . '.ip_address', $ip)
+            ->where(function ($guestQuery) use ($table) {
+                $guestQuery->whereNull($table . '.user_id')
+                    ->orWhere($table . '.user_id', 0)
+                    ->orWhere($table . '.user_id', '');
+            });
+    }
+
     
     /* Category Fileter Page Code Start */
    public function categories_list(Request $request,$slug)
@@ -426,7 +457,7 @@ class ProductController extends Controller
                 'product_filter' => view('front.product.filter_product',$List)->render(),
                 'data' => $data,
             );
-            return  Response::json($response); die;
+            return  Response::json($response);
         
  
     }
@@ -445,7 +476,13 @@ class ProductController extends Controller
         $page_title = Product::where('slug',$slug)->value('meta_title');
         
         $data['products_show'] = Product::leftJoin('product_quantity', function ($join) {
-                $join->on('product_quantity.product_quantity_id', '=', DB::raw('(SELECT product_quantity_id FROM product_quantity WHERE product_quantity.product_id = products.product_id LIMIT 1)'));})->where('products.slug',$slug)->get();
+                $join->on('product_quantity.product_quantity_id', '=', DB::raw('(SELECT product_quantity_id FROM product_quantity WHERE product_quantity.product_id = products.product_id LIMIT 1)'));})
+                ->select('products.*', 'product_quantity.*')
+                ->where('products.slug',$slug)->get();
+        $data['product_gallery_images'] = [];
+        foreach ($data['products_show'] as $productShow) {
+            $data['product_gallery_images'][$productShow->product_id] = $this->getProductGalleryImages($productShow->product_id, $productShow->product_images);
+        }
         
         $title = Product::where('slug',$slug)->value('product_title');
         
@@ -455,33 +492,45 @@ class ProductController extends Controller
         
         $ip_address = request()->ip();
         
-        $data['prductss_datas'] =  DB::table('products')->where('slug','=',$slug)->get();
+        $data['prductss_datas'] =  AdminRecycleBinService::activeTable('products')->where('slug','=',$slug)->get();
         
-        $vendorname = DB::table('vendors')->where('vendor_id',$vendor)->value('vendor_name');
+        $vendorname = AdminRecycleBinService::activeTable('vendors')->where('vendor_id',$vendor)->value('vendor_name');
         
-        $cats =  DB::table('products')->where('slug','=',$slug)->value('category');
-        $product_id =  DB::table('products')->where('slug','=',$slug)->value('product_id');
+        $cats =  AdminRecycleBinService::activeTable('products')->where('slug','=',$slug)->value('category');
+        $product_id =  AdminRecycleBinService::activeTable('products')->where('slug','=',$slug)->value('product_id');
        
-          $cats_l = json_decode($cats);
+          $cats_l = json_decode($cats, true);
+          $cats_l = is_array($cats_l) ? array_values(array_filter($cats_l)) : [];
+          $relatedCategory = isset($cats_l[1]) ? $cats_l[1] : (isset($cats_l[0]) ? $cats_l[0] : null);
 
           
               $data['rel_product'] = Product::leftJoin('product_quantity', function ($join) {
                 $join->on('product_quantity.product_quantity_id', '=', DB::raw('(SELECT product_quantity_id FROM product_quantity WHERE product_quantity.product_id = products.product_id LIMIT 1)'));})
-                ->where('products.is_active','ACTIVE') 
-                ->where('products.category', 'LIKE', '%"'.$cats_l[1].'"%')
-                ->orderBy('products.product_id', 'desc')
-                ->paginate(9);
+                ->select('products.*', 'product_quantity.*')
+                ->where('products.is_active','ACTIVE');
+
+              if ($relatedCategory) {
+                  $data['rel_product']->where('products.category', 'LIKE', '%"'.$relatedCategory.'"%');
+              } else {
+                  $data['rel_product']->where('products.product_id', '!=', $product_id ?: 0);
+              }
+
+              $data['rel_product'] = $data['rel_product']
+                  ->orderBy('products.product_id', 'desc')
+                  ->paginate(9);
              
         
-        $data['review_list'] = DB::table('review')
+        $data['review_list'] = AdminRecycleBinService::activeTable('review')
                 ->join('products','products.product_id', '=', 'review.product_id')
+                ->whereNull('products.deleted_at')
                 ->where('products.product_id',$product_id)
                 ->where('review.is_active','ACTIVE')
                 ->orderby('review.review_id', 'desc')->limit(2)
                 ->get(); 
         
-        $reviewCount =  DB::table('review')
+        $reviewCount =  AdminRecycleBinService::activeTable('review')
                 ->join('products','products.product_id','review.product_id')
+                ->whereNull('products.deleted_at')
                 ->where('products.product_id',$product_id)
                 ->where('review.is_active','ACTIVE')
                 ->orderby('review.review_id', 'desc')->limit(2)
@@ -508,7 +557,13 @@ class ProductController extends Controller
         $page_title = $proTitle." - Zouple";
         
         $data['products_show'] = Product::leftJoin('product_quantity', function ($join) {
-                $join->on('product_quantity.product_quantity_id', '=', DB::raw('(SELECT product_quantity_id FROM product_quantity WHERE product_quantity.product_id = products.product_id LIMIT 1)'));})->where('products.slug',$slug)->get();
+                $join->on('product_quantity.product_quantity_id', '=', DB::raw('(SELECT product_quantity_id FROM product_quantity WHERE product_quantity.product_id = products.product_id LIMIT 1)'));})
+                ->select('products.*', 'product_quantity.*')
+                ->where('products.slug',$slug)->get();
+        $data['product_gallery_images'] = [];
+        foreach ($data['products_show'] as $productShow) {
+            $data['product_gallery_images'][$productShow->product_id] = $this->getProductGalleryImages($productShow->product_id, $productShow->product_images);
+        }
         
         $title = Product::where('slug',$slug)->value('product_title');
         
@@ -518,12 +573,12 @@ class ProductController extends Controller
         
         $ip_address = request()->ip();
         
-        $data['prductss_datas'] =  DB::table('products')->where('slug','=',$slug)->get();
+        $data['prductss_datas'] =  AdminRecycleBinService::activeTable('products')->where('slug','=',$slug)->get();
         
-        $vendorname = DB::table('vendors')->where('vendor_id',$vendor)->value('vendor_name');
+        $vendorname = AdminRecycleBinService::activeTable('vendors')->where('vendor_id',$vendor)->value('vendor_name');
         
-        $cats =  DB::table('products')->where('slug','=',$slug)->value('category');
-        $product_id =  DB::table('products')->where('slug','=',$slug)->value('product_id');
+        $cats =  AdminRecycleBinService::activeTable('products')->where('slug','=',$slug)->value('category');
+        $product_id =  AdminRecycleBinService::activeTable('products')->where('slug','=',$slug)->value('product_id');
        
           $cats_l = json_decode($cats);
 
@@ -531,6 +586,7 @@ class ProductController extends Controller
           {
               $data['rel_product'] = Product::leftJoin('product_quantity', function ($join) {
                 $join->on('product_quantity.product_quantity_id', '=', DB::raw('(SELECT product_quantity_id FROM product_quantity WHERE product_quantity.product_id = products.product_id LIMIT 1)'));})
+                ->select('products.*', 'product_quantity.*')
                 ->where('products.is_active','ACTIVE') 
                 ->where('products.category', 'LIKE', '%"'.$dt.'"%')
                 ->orderBy('products.product_id', 'desc')
@@ -538,17 +594,21 @@ class ProductController extends Controller
               break;
           }
         
-        $data['review_list'] = DB::table('review')
+        $data['review_list'] = AdminRecycleBinService::activeTable('review')
                 ->join('users','users.id','review.user_id')
                 ->join('products','products.product_id','review.product_id')
+                ->whereNull('users.deleted_at')
+                ->whereNull('products.deleted_at')
                 ->where('products.product_id',$product_id)
                 ->where('review.is_active','ACTIVE')
                 ->orderby('review.review_id', 'desc')->limit(2)
                 ->get(); 
         
-        $reviewCount =  DB::table('review')
+        $reviewCount =  AdminRecycleBinService::activeTable('review')
                 ->join('users','users.id','review.user_id')
                 ->join('products','products.product_id','review.product_id')
+                ->whereNull('users.deleted_at')
+                ->whereNull('products.deleted_at')
                 ->where('products.product_id',$product_id)
                 ->where('review.is_active','ACTIVE')
                 ->orderby('review.review_id', 'desc')->limit(2)
@@ -560,6 +620,7 @@ class ProductController extends Controller
         
         $data['view_flash_data'] = DB::table('flash_sale')
             ->join('products', 'products.product_id', '=', 'flash_sale.product_id')
+            ->whereNull('products.deleted_at')
             ->where('flash_sale.flash_active', 'ACTIVE')
             ->get();
         
@@ -622,7 +683,7 @@ class ProductController extends Controller
         $user_id = "";
         $pro_qty =$request->pro_qty;
         $ip =$request->ip();
-        $input['ip_address'] = $request->ip_address;
+        $input['ip_address'] = $ip;
         if(isset(Auth::user()->id))
         {
             $user_id = Auth::user()->id;
@@ -640,10 +701,10 @@ class ProductController extends Controller
             $cart_qty_id = DB::table('product_quantity')->where('attributes_value',$pro_details)->where('product_id',$product_id)->value('product_quantity_id');
 
 
-            $check_cart = DB::table('carts')
+            $check_cart = $this->applyCurrentCartOwner(DB::table('carts')
                 ->where('product_qty_id',$cart_qty_id)
                 ->where('product_id',$product_id)
-                ->where('ip_address',$ip)->value('cart_id');
+                , $request)->value('cart_id');
 
 
             if($check_cart == "")
@@ -682,10 +743,10 @@ class ProductController extends Controller
         {
             
             $cart_qty_id = DB::table('product_quantity')->where('product_id',$product_id)->value('product_quantity_id');
-            $check_cart = DB::table('carts')
+            $check_cart = $this->applyCurrentCartOwner(DB::table('carts')
                 ->where('product_qty_id',$cart_qty_id)
                 ->where('product_id',$product_id)
-                ->where('ip_address',$ip)->value('cart_id');
+                , $request)->value('cart_id');
 
 
             if($check_cart == "")
@@ -700,7 +761,7 @@ class ProductController extends Controller
            /* echo $pro_details;*/
 
             $proStatus = "0";
-            $checkCart = DB::table('carts')->where('ip_address',$ip)->get();
+            $checkCart = $this->applyCurrentCartOwner(DB::table('carts'), $request)->get();
             if(!$checkCart->isEmpty())
             {
                 foreach($checkCart as $dat)
@@ -759,7 +820,7 @@ class ProductController extends Controller
         
         $vendor_id = $request->vendor_id;
         $product_id = $request->product_id;
-        $ip_address = $request->ip_address;
+        $ip_address = $request->ip();
         $pro_qty =$request->pro_qty;
         
         //for pro attributes //
@@ -775,10 +836,10 @@ class ProductController extends Controller
             $cart_qty_id = DB::table('product_quantity')->where('attributes_value',$pro_details)->where('product_id',$product_id)->value('product_quantity_id');
 
 
-            $check_cart = DB::table('carts')
+            $check_cart = $this->applyCurrentCartOwner(DB::table('carts')
                 ->where('product_qty_id',$cart_qty_id)
                 ->where('product_id',$product_id)
-                ->where('ip_address',$ip_address)->value('cart_id');
+                , $request)->value('cart_id');
 
 
             if($check_cart == "")
@@ -802,7 +863,7 @@ class ProductController extends Controller
                 $input['product_qty_id'] = $cart_qty_id;
                 $input['vendor_id'] = $vendor_id;
                 $input['product_qty'] = $request->pro_qty;
-                $input['ip_address'] = $request->ip_address;
+                $input['ip_address'] = $ip_address;
                 Db::table('carts')->insert($input);
 
             }
@@ -814,10 +875,10 @@ class ProductController extends Controller
         {
             
             $cart_qty_id = DB::table('product_quantity')->where('product_id',$product_id)->value('product_quantity_id');
-            $check_cart = DB::table('carts')
+            $check_cart = $this->applyCurrentCartOwner(DB::table('carts')
                 ->where('product_qty_id',$cart_qty_id)
                 ->where('product_id',$product_id)
-                ->where('ip_address',$ip_address)->value('cart_id');
+                , $request)->value('cart_id');
 
 
             if($check_cart == "")
@@ -832,7 +893,7 @@ class ProductController extends Controller
            /* echo $pro_details;*/
 
             $proStatus = "0";
-            $checkCart = DB::table('carts')->where('ip_address',$ip_address)->get();
+            $checkCart = $this->applyCurrentCartOwner(DB::table('carts'), $request)->get();
             if(!$checkCart->isEmpty())
             {
                 foreach($checkCart as $dat)
@@ -863,7 +924,7 @@ class ProductController extends Controller
                 $input['product_qty_id'] = $cart_qty_id;
                 $input['vendor_id'] = $vendor_id;
                 $input['product_qty'] = $request->pro_qty;
-                $input['ip_address'] = $request->ip_address;
+                $input['ip_address'] = $ip_address;
 
 
                 Db::table('carts')->insert($input);
@@ -895,8 +956,8 @@ class ProductController extends Controller
         {
             $pros = explode(',',$request->filter);
             $pro_details = json_encode($pros);
-            $pro_qty = $request->pro_qty;
-            $check_qty = DB::table('product_quantity')->where('attributes_value',$pro_details)->where('product_id',$product_id)->value('product_quantity');
+            $pro_qty = max(1, (int) $request->pro_qty);
+            $check_qty = (int) DB::table('product_quantity')->where('attributes_value',$pro_details)->where('product_id',$product_id)->value('product_quantity');
 
             if($check_qty >= $pro_qty)
             {
@@ -926,8 +987,8 @@ class ProductController extends Controller
         }
         elseif($check_filter != "" && $check_filter == "Self")
         {
-            $pro_qty = $request->pro_qty;
-            $check_qty = DB::table('product_quantity')->where('product_id',$product_id)->value('product_quantity');
+            $pro_qty = max(1, (int) $request->pro_qty);
+            $check_qty = (int) DB::table('product_quantity')->where('product_id',$product_id)->value('product_quantity');
 
             if($check_qty >= $pro_qty)
             {
@@ -970,8 +1031,8 @@ class ProductController extends Controller
             $pros = explode(',',$request->filter);
             $pro_details = json_encode($pros);
             
-            $pro_qty = $request->pro_qty;
-            $check_qty = DB::table('product_quantity')->where('attributes_value',$pro_details)->where('product_id',$product_id)->value('product_quantity');
+            $pro_qty = max(1, (int) $request->pro_qty);
+            $check_qty = (int) DB::table('product_quantity')->where('attributes_value',$pro_details)->where('product_id',$product_id)->value('product_quantity');
 
             if($check_qty >= $pro_qty)
             {
@@ -1218,23 +1279,26 @@ class ProductController extends Controller
             
         if($request->file('user_profile')!='')
             {
-                $file=$request->file('user_profile');
-                $filename=$file->getClientOriginalName();
-                $imgname = $filename;
-                $input['user_profile']= $imgname;       
-                $destinationPath=public_path('upload/review/');       
-                $request->file('user_profile')->move($destinationPath, $imgname);
+                $upload = app(AdminMediaService::class)->uploadImage($request->file('user_profile'), 'reviews', 'review');
+                $input['user_profile']= $upload['path'];
+                if (Schema::hasColumn('review', 'user_profile_public_id')) {
+                    $input['user_profile_public_id'] = $upload['public_id'];
+                }
             } 
         if($request->file('review_product_image')!='')
             {
+                $product_image = [];
+                $publicIds = [];
                 foreach($request->file('review_product_image') as $image)
                 {
-                    $name= $image->getClientOriginalName();
-                    $destinationPath=public_path('upload/review/');       
-                    $image->move($destinationPath,$name);  
-                    $product_image[] = $name;
+                    $upload = app(AdminMediaService::class)->uploadImage($image, 'reviews', 'review');
+                    $product_image[] = $upload['path'];
+                    $publicIds[] = $upload['public_id'];
                 }
                  $input['review_product_image'] = json_encode($product_image);
+                 if (Schema::hasColumn('review', 'review_product_image_public_ids')) {
+                     $input['review_product_image_public_ids'] = json_encode($publicIds);
+                 }
             }
         
        
@@ -1606,6 +1670,63 @@ class ProductController extends Controller
     }
     
     /* Add To Wish List Code End */
+
+    private function getProductGalleryImages($productId, $legacyJson = null)
+    {
+        $images = [];
+
+        if ($productId && \Schema::hasTable('product_gallery_images')) {
+            $rows = DB::table('product_gallery_images')
+                ->where('product_id', $productId)
+                ->orderBy('sort_order', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            foreach ($rows as $row) {
+                if (\Schema::hasColumn('product_gallery_images', 'image_url') && !empty($row->image_url)) {
+                    $images[] = $row->image_url;
+                    continue;
+                }
+
+                if (!empty($row->image)) {
+                    $images[] = $row->image;
+                }
+            }
+        }
+
+        if (empty($images) && $legacyJson) {
+            $legacyImages = json_decode($legacyJson, true);
+            $images = is_array($legacyImages) ? $legacyImages : [];
+        }
+
+        $cleanImages = [];
+        foreach ($images as $image) {
+            $image = $this->normalizeProductImageReference($image);
+            if ($image !== '') {
+                $cleanImages[] = $image;
+            }
+        }
+
+        return array_values(array_unique($cleanImages));
+    }
+
+    private function normalizeProductImageReference($filename)
+    {
+        $filename = trim(str_replace('\\', '/', (string) $filename));
+        if ($filename === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $filename)) {
+            return $filename;
+        }
+
+        if (strpos($filename, 'gallery/') === 0) {
+            return 'gallery/' . basename($filename);
+        }
+
+        return basename($filename);
+    }
     
     
 }

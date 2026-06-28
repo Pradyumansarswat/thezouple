@@ -51,23 +51,119 @@ var currentTab = 0;
 
 function showTab(e) {
     var n = document.getElementsByClassName("tab");
+    if (!n.length || !n[e]) return;
     n[e].style.display = "block", 0 == e ? (document.getElementById("prevBtn").style.display = "none", document.getElementById("nextBtn").style.display = "inline") : (document.getElementById("prevBtn").style.display = "inline", document.getElementById("nextBtn").style.display = "none"), e == n.length - 1 ? (document.getElementById("nextBtn").innerHTML = "Pay now", document.getElementById("nextBtn").style.display = "none") : document.getElementById("nextBtn").innerHTML = "Continue", fixStepIndicator(e)
 }
 
 function nextPrev(e) {
     var n = document.getElementsByClassName("tab");
+    if (!n.length || !n[currentTab]) return false;
     return !(1 == e && !validateForm()) && (n[currentTab].style.display = "none", (currentTab += e) >= n.length ? (document.getElementById("regForm").submit(), !1) : void showTab(currentTab))
 }
 
 function validateForm() {
     var e, n, t = !0;
+    if (!document.getElementsByClassName("tab")[currentTab]) return true;
     for (e = document.getElementsByClassName("tab")[currentTab].getElementsByTagName("input"), n = 0; n < e.length; n++) "" == e[n].value && (e[n].className += " invalid", t = !1);
-    return t && (document.getElementsByClassName("step")[currentTab].className += " finish"), t
+    return t && document.getElementsByClassName("step")[currentTab] && (document.getElementsByClassName("step")[currentTab].className += " finish"), t
 }
 
 function fixStepIndicator(e) {
     var n, t = document.getElementsByClassName("step");
+    if (!t.length || !t[e]) return;
     for (n = 0; n < t.length; n++) t[n].className = t[n].className.replace(" active", "");
     t[e].className += " active"
 }
-showTab(currentTab);
+if (document.getElementsByClassName("tab").length) showTab(currentTab);
+
+/* Zouple premium polish: visual-only frontend behavior */
+(function () {
+    "use strict";
+
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function ready(callback) {
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", callback);
+            return;
+        }
+
+        callback();
+    }
+
+    function initReveal() {
+        if (reduceMotion || typeof window.AOS === "undefined") {
+            return;
+        }
+
+        var selectors = [
+            ".product-card",
+            ".zouple-product-card",
+            ".thumbnail",
+            ".card",
+            ".card-box",
+            ".blog-card",
+            ".testimonial-card",
+            ".zouple-cart-item",
+            ".zouple-checkout-panel",
+            "section > .container",
+            "section > .container-fluid"
+        ];
+
+        selectors.forEach(function (selector) {
+            Array.prototype.forEach.call(document.querySelectorAll(selector), function (element) {
+                if (element.closest(".modal") || element.hasAttribute("data-aos")) {
+                    return;
+                }
+
+                element.setAttribute("data-aos", "fade-up");
+                element.setAttribute("data-aos-duration", "520");
+                element.setAttribute("data-aos-offset", "60");
+                element.setAttribute("data-aos-once", "true");
+                element.classList.add("zouple-reveal");
+            });
+        });
+
+        window.AOS.init({
+            once: true,
+            duration: 520,
+            easing: "ease-out-cubic",
+            offset: 60,
+            disable: function () {
+                return window.innerWidth < 576 || reduceMotion;
+            }
+        });
+    }
+
+    function initBackToTop() {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "zouple-back-to-top";
+        button.setAttribute("aria-label", "Back to top");
+        button.innerHTML = '<i class="fa fa-angle-up" aria-hidden="true"></i>';
+        document.body.appendChild(button);
+
+        function toggle() {
+            if (window.pageYOffset > 420) {
+                button.classList.add("is-visible");
+            } else {
+                button.classList.remove("is-visible");
+            }
+        }
+
+        button.addEventListener("click", function () {
+            window.scrollTo({
+                top: 0,
+                behavior: reduceMotion ? "auto" : "smooth"
+            });
+        });
+
+        window.addEventListener("scroll", toggle, { passive: true });
+        toggle();
+    }
+
+    ready(function () {
+        initReveal();
+        initBackToTop();
+    });
+})();

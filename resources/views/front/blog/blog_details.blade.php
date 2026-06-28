@@ -30,7 +30,7 @@
             @foreach($blogs_datas as $blogs)
             <div class="row">
                 <div class="col-md-6 my-4">
-                    <img src="{{URL::asset('public/upload/blog/'.$blogs->image)}}" width="100%" alt="img" height="400px;">
+                    <img src="{{ z_media_url($blogs->image, 'blog') }}" width="100%" alt="img" height="400px;">
                 </div>
                 <div class="col-md-6 my-4 align-self-center ">
                     <div class="h3 text-white p-5 position-relative shadow aboutContent" style="background-color:#2C2C2C; left:-100px;">
@@ -79,7 +79,7 @@
 
             <div class="col-md-12  col-sm-6 d-flex py-3">
                 <div class="col-4 p-0">
-                    <img src="{{URL::asset('public/upload/product/'.$wish->product_header_image)}}" alt="IMG" width="100%">
+                    <img src="{{ z_media_url($wish->product_header_image, 'product') }}" alt="IMG" width="100%">
                 </div>
 
                 <div class="col-8 pr-0">

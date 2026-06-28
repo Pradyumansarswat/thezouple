@@ -13,6 +13,8 @@
 
 
 Auth::routes(['verify' => true]);
+Route::get('robots.txt', 'SeoController@robots');
+Route::get('sitemap.xml', 'SeoController@sitemap');
 Route::get('getdata','HomeController@ipAddressFounder');
 Route::any('printInvoicesss/{order_number}','ProfileController@customerMailInvoice');
 
@@ -161,6 +163,8 @@ Route::get('blogShow/{slug}','BlogController@blogShowPage');
     
 });
 
+Route::any('paytm-callback','CheckoutController@paytmcallback');
+
 
 Route::group([ 'middleware' => ['auth_front','web_mid']], function () 
 {
@@ -240,8 +244,6 @@ Route::group([ 'middleware' => ['auth_front','web_mid']], function ()
     Route::any('go_checkout','CheckoutController@checkout_details');
     
     Route::any('paymentNow','CheckoutController@goToPaymentSystem');
-    
-    Route::any('paytm-callback','CheckoutController@paytmcallback');
     
     Route::any('buyNow','CheckoutController@buyNowSystem');
     
@@ -345,13 +347,13 @@ Route::group([ 'middleware' => ['auth_front','web_mid']], function ()
 
 Route::group(array('prefix' => 'masterAdmin','namespace'=>'masterAdmin'), function(){
    Route::group([ 'middleware' => ['guest_admin']], function () {
-        Route::any('/', ['as' => '/', 'uses' => 'MasterAdmin@login']);
-        Route::any('/login', ['as' => 'login', 'uses' => 'MasterAdmin@login']);
+        Route::any('/', ['as' => 'admin.root', 'uses' => 'MasterAdmin@login']);
+        Route::any('/login', ['as' => 'admin.login', 'uses' => 'MasterAdmin@login']);
   });
     
     Route::group([ 'middleware' => ['auth_admin','web_mid']], function () {
-        Route::any('/dashboard',['as' => 'dashboard', 'uses' =>'DashboardController@showDashboard']);
-        Route::any('logout', ['as' => 'logout', 'uses' =>'MasterAdmin@logout']);
+        Route::any('/dashboard',['as' => 'admin.dashboard', 'uses' =>'DashboardController@showDashboard']);
+        Route::any('logout', ['as' => 'admin.logout', 'uses' =>'MasterAdmin@logout']);
         
         /* ------------------------------------ Slider Code Start ------------------------------ */
         
@@ -642,6 +644,7 @@ Route::group(array('prefix' => 'masterAdmin','namespace'=>'masterAdmin'), functi
         Route::get('mail_setting/{id}', ['as' => 'mail_setting', 'uses' =>'SettingController@mail_update']);
          
         Route::post('mail_setting_update', ['as' => 'mail_setting_update', 'uses' =>'SettingController@mail_update_save']);    
+        Route::get('payment_settings', ['as' => 'payment_settings', 'uses' =>'SettingController@payment_settings']);
         
         /* ------------------------------ Mail Setting Code End -------------------------------- */
         
@@ -679,6 +682,7 @@ Route::group(array('prefix' => 'masterAdmin','namespace'=>'masterAdmin'), functi
         
          Route::get('mainVideo', ['as' => 'mainVideo', 'uses' =>'VideoController@mainVideoList']);
          Route::get('mainVideoUpdate', ['as' => 'mainVideoUpdate', 'uses' =>'VideoController@mainVideoUpdatePage']);
+         Route::get('mainvideoUpdateSave', ['as' => 'mainvideoUpdateSaveRedirect', 'uses' =>'VideoController@mainvideoUpdateSaveRedirect']);
          Route::post('mainvideoUpdateSave', ['as' => 'mainvideoUpdateSave', 'uses' =>'VideoController@mainvideoUpdateStore']);
         
         /* ------------------------------------ Main Video Code End ------------------------------ */
@@ -689,6 +693,7 @@ Route::group(array('prefix' => 'masterAdmin','namespace'=>'masterAdmin'), functi
         
         Route::get('subVideoUpdate', ['as' => 'subVideoUpdate', 'uses' =>'VideoController@subVideoUpdatePage']);
         
+        Route::get('subvideoUpdateSave', ['as' => 'subvideoUpdateSaveRedirect', 'uses' =>'VideoController@subvideoUpdateSaveRedirect']);
         Route::post('subvideoUpdateSave', ['as' => 'subvideoUpdateSave', 'uses' =>'VideoController@subvideoUpdateStore']);
         
         /* ------------------------------------ Sub Video Code End ------------------------------ */
@@ -946,6 +951,15 @@ Route::group(array('prefix' => 'masterAdmin','namespace'=>'masterAdmin'), functi
 
         /* Currency Code End */
         
+        /* ================= Recycle Bin Routes ================= */
+        Route::get('recycleBin', ['as' => 'recycleBin', 'uses' => 'RecycleBinController@index']);
+        Route::get('restoreItem/{type}/{id}', ['as' => 'restoreItem', 'uses' => 'RecycleBinController@restore']);
+        Route::get('permanentDelete/{type}/{id}', ['as' => 'permanentDelete', 'uses' => 'RecycleBinController@permanentDelete']);
+        Route::post('recycleBulk', ['as' => 'recycleBulk', 'uses' => 'RecycleBinController@bulk']);
+        Route::get('recycleCleanup', ['as' => 'recycleCleanupPage', 'uses' => 'RecycleBinController@cleanupPage']);
+        Route::post('recycleCleanup', ['as' => 'recycleCleanup', 'uses' => 'RecycleBinController@cleanup']);
+        Route::get('videoDelete/{video_id}', ['as' => 'videoDelete', 'uses' => 'VideoController@deleteVideo']);
+        /* ================= Recycle Bin Routes ================= */
         
     });
 });

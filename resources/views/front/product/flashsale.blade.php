@@ -279,14 +279,35 @@
     <div class="row pb-5 maxWidhtContainer">
         @foreach($products_show as $product)
         <div class="col-12 p-0 col-xs-12 d-block flex-wrap col-sm-12 col-md-5 border">
-            <div class=" text-center"><a href="{{URL::asset('public/upload/product/'.$product->product_header_image)}}" class="MagicZoom" id="plant"><img src="{{URL::asset('public/upload/product/'.$product->product_header_image)}}"></a></div>
-            <?php
-                                    
-	                $imgs = json_decode($product->product_images);
-	                ?>
+            @php
+                $savedGalleryImages = $product_gallery_images[$product->product_id] ?? json_decode($product->product_images, true);
+                $savedGalleryImages = is_array($savedGalleryImages) ? $savedGalleryImages : [];
+                $imgs = [];
+                $headerImage = trim((string) $product->product_header_image);
+
+                if ($headerImage !== '' && z_media_exists($headerImage, 'product')) {
+                    $imgs[] = $headerImage;
+                }
+
+                $savedGalleryImages = array_values(array_filter($savedGalleryImages, function($image) {
+                    $image = trim((string) $image);
+                    return $image !== '' && z_media_exists($image, 'product');
+                }));
+
+                foreach ($savedGalleryImages as $image) {
+                    if (!in_array($image, $imgs, true)) {
+                        $imgs[] = $image;
+                    }
+                }
+            @endphp
+            @if(!empty($imgs))
+            <div class="text-center"><a href="{{ z_media_url($imgs[0], 'product') }}" class="MagicZoom" id="plant"><img src="{{ z_media_url($imgs[0], 'product') }}" alt="{{ $product->product_title }}"></a></div>
+            @else
+            <div class="product-image-placeholder">{{ strtoupper(substr(trim($product->product_title ?: 'P'), 0, 1)) }}</div>
+            @endif
             <div class="d-flex  m-4">
                 @foreach($imgs as $val)
-                <div class="col"><a data-zoom-id="plant" href="{{URL::asset('public/upload/product/'.$val)}}" data-image="{{URL::asset('public/upload/product/'.$val)}}"><img src="{{URL::asset('public/upload/product/'.$val)}}" class="magicImg" width="100%" style="max-width:100px;"></a></div>
+                <div class="col"><a data-zoom-id="plant" href="{{ z_media_url($val, 'product') }}" data-image="{{ z_media_url($val, 'product') }}"><img src="{{ z_media_url($val, 'product') }}" class="magicImg" width="100%" style="max-width:100px;" alt="{{ $product->product_title }}"></a></div>
                 @endforeach
             </div>
         </div>
@@ -722,7 +743,7 @@
                     <a href="{{url('product', $relproduct->slug)}}">
                         <div class="card " style="border-radius: 15px; overflow: hidden;">
                                 <div class="card-body p-0 position-relative">
-                                <img src="{{URL::asset('public/upload/product/'.$relproduct->product_header_image)}}" width="100%">
+                                <img src="{{ z_media_url($relproduct->product_header_image, 'product') }}" width="100%">
 
 
                             </div>

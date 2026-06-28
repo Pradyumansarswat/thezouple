@@ -11,7 +11,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -37,8 +37,9 @@
                         <div class="row col-sm-6">
                             <div class="col-sm-12">
                                 <div class="form-group">
-                                    <label class="control-label">Pincode - Choose Excel File</label>
-                                    <input type="file" name="file" class="form-control" accept="text/csv, .csv" required>
+                                    <label class="control-label">Pincode - Choose CSV / Excel File</label>
+                                    <input type="file" name="file" class="form-control" accept=".csv,.txt,.xlsx,.xls,text/csv" required>
+                                    <small class="form-text text-muted">Columns: pincode, city, state. <a href="data:text/csv;charset=utf-8,pincode,city,state%0A331022,Churu,Rajasthan" download="sample-pincode.csv">Download sample CSV</a></small>
                                 </div>
                             </div>
                             <div class="col-sm-12">

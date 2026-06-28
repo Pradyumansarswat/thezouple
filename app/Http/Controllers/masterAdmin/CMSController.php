@@ -9,6 +9,7 @@ use Auth,Redirect,View,File,Config,Image;
 use App\Cms;
 use Validator;
 use DB;
+use App\Services\AdminRecycleBinService;
 
 class CMSController extends Controller
 {
@@ -48,8 +49,8 @@ class CMSController extends Controller
     }
     public function cmsdestory(Request $request,$id)
     {
-        Cms::where('cms_id','=',$id)->delete();
-        $request->session()->flash('alert-success','CMS Page has been sucessfully deleted.');
+        AdminRecycleBinService::softDelete('cms', $id);
+        $request->session()->flash('alert-success','CMS Page moved to Recycle Bin.');
         return Redirect::route('cms_page');
     }
     

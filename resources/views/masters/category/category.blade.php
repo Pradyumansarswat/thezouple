@@ -11,7 +11,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -75,7 +75,7 @@
                                         }
                                         ?>
                                     </td>
-                                    <td><img src="{{URL::asset('public/upload/category/'.$data->image)}}" width="200px"></td>
+                                    <td><img src="{{ z_media_url($data->image, 'category') }}" width="200px"></td>
                                     <td>{{$data->meta_title}}</td>
                                     <td>{{$data->meta_keyword}}</td>
                                     <td>{{$data->description}}</td>
@@ -110,7 +110,7 @@
                                     </td>
                                     <td class="text-center">
                                         <a href="{{route('category_edit',$data->category_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
-                                        <a href="{{route('categoryDelete',$data->category_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
+                                        <a href="{{route('categoryDelete',$data->category_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                     </td>
                                     <td>
                                         <a href="{{route('sub_category',$data->category_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: blue;margin-left: 20px;"><i class="fa fa-list-alt" aria-hidden="true"></i></span></a>

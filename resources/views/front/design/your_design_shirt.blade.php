@@ -94,7 +94,7 @@
                         <th scope="row">1</th>
                         <td class="align-self-center">Febric</td>
                         <td>
-                            <img src="{{URL::asset('public/upload/shirt/'.$febricImage[$dt])}}" width="100%" style="max-height: 100px; width:auto;">
+                            <img src="{{ z_media_url($febricImage[$dt], 'shirt') }}" width="100%" style="max-height: 100px; width:auto;">
                             <br>
                             <b>{{$febricName[$dt]}}</b>
                         </td>
@@ -106,7 +106,7 @@
                         <td class="align-self-center">{{$key}}</td>
                         <td>
 
-                            <img src="{{URL::asset('public/upload/shirt/'.$elementValueImage[$dt])}}" width="100%" style="max-height: 100px; width:auto;">
+                            <img src="{{ z_media_url($elementValueImage[$dt], 'shirt') }}" width="100%" style="max-height: 100px; width:auto;">
                             <br>
                             <b>{{$elementValueName[$dt]}}</b>
                         </td>

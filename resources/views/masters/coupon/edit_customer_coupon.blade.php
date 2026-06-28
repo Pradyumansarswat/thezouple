@@ -11,7 +11,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -45,7 +45,8 @@
 
 
                                 <?php 
-                                $user_information = json_decode($customer_data->id);
+                                $user_information = json_decode($customer_data->id, true);
+                                $user_information = is_array($user_information) ? $user_information : array();
                                 ?>
 
 
@@ -71,15 +72,15 @@
                                         <td>
                                             <div class="form-check">
                                                 <label class="form-check-label">
-                                                    <input class="form-check-input" type="checkbox" value="{{$user->id}}" name="id[]" multiple {{$check1}}>{{$cust_name[$user->id]}}
+                                                    <input class="form-check-input" type="checkbox" value="{{$user->id}}" name="id[]" multiple {{$check1}}>{{ $cust_name[$user->id] ?? ($user->name ?: ('Customer #' . $user->id)) }}
                                                 </label>
                                             </div>
                                         </td>
                                         <td>
-                                            {{$amount[$user->id]}}
+                                            {{ $amount[$user->id] ?? 0 }}
                                         </td>
                                         <td>
-                                            {{$last_date[$user->id]}}
+                                            {{ $last_date[$user->id] ?? 'No purchase' }}
                                         </td>
                                     </tr>
                                     @endforeach

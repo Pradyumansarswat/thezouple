@@ -1,9 +1,9 @@
 <?php
 return [ 
-    'client_id' => env('PAYPAL_CLIENT_ID','AXmdhNhFa1Kr1pwZO4yvSBRHj748moevYBhCydCE75ZDmWfti3HCbZgU4Y_BgiAfajEIMdCese15wxXL'),
-    'secret' => env('PAYPAL_SECRET','EMdfV21PSdVFXLObeWJqANBaPLVpdTWcFllEDpOm_IPCJ79R5p5_IZNLpl4MMP0vSSBxvPw95FhoD15R'),
+    'client_id' => env('PAYPAL_CLIENT_ID', ''),
+    'secret' => env('PAYPAL_SECRET', env('PAYPAL_SECRET_ID', '')),
     'settings' => array(
-        'mode' => env('PAYPAL_MODE','Live'),
+        'mode' => env('PAYPAL_MODE','live'),
         'http.ConnectionTimeOut' => 30,
         'log.LogEnabled' => true,
         'log.FileName' => storage_path() . '/logs/paypal.log',

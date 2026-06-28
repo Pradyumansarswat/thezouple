@@ -13,6 +13,7 @@ use App\User;
 use App\Siteinfo;
 use App\Imports\pinImport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Log;
 
 class SettingController extends Controller
 {
@@ -119,9 +120,18 @@ class SettingController extends Controller
     
     public function import_pincodeStore(Request $request)
     {
-        Excel::import(new pinImport,request()->file('file'));
-           
-        $request->session()->flash('alert-success','Pincode Import !!');
+        $this->validate($request, [
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:4096',
+        ]);
+
+        try {
+            Excel::import(new pinImport, $request->file('file'));
+            $request->session()->flash('alert-success','Pincode Import !!');
+        } catch (\Exception $exception) {
+            Log::error('Pincode import failed', ['error' => $exception->getMessage()]);
+            $request->session()->flash('alert-danger','Pincode import failed. Please check the file format and try again.');
+        }
+
         return Redirect::route('pincode');
     }
 
@@ -144,12 +154,12 @@ class SettingController extends Controller
     public function change_password_update_save(Request $request)
     {
       $id = $request->id;
-      $old_pass = Auth::user()->password;
+      $old_pass = Auth::guard('admin')->user()->password;
       $old_password = $request->oldpassword;
         
         $this->validate($request , array
          (    
-             'password' =>'min:6'
+             'password' => 'required|string|min:8|regex:/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/'
          ));  
       if((Hash::check($old_password , $old_pass)))
       {
@@ -158,7 +168,9 @@ class SettingController extends Controller
          $input['email']=$request->email; 
          User::where('id','=',$id)->update($input); 
           
-          Auth::logout();
+          Auth::guard('admin')->logout();
+          $request->session()->invalidate();
+          $request->session()->regenerateToken();
           $request->session()->flash('alert-danger','Password has been sucessfully updated.'); 
           return redirect('masterAdmin');
       }
@@ -209,6 +221,11 @@ class SettingController extends Controller
 
     public function site_information_save_update_format(Request $request)
     {
+        $this->validate($request, [
+            'meta_email' => 'required|email',
+            'whatsapp_number' => 'nullable|string|max:30',
+            'recycle_cleanup_days' => 'required|in:30,60,90',
+        ]);
         $input = $request->all();
        Siteinfo::where('siteinfo_id',1)->update($input);
 
@@ -217,4 +234,45 @@ class SettingController extends Controller
     }
 
     /* Site Information */
+
+    public function payment_settings(Request $request)
+    {
+        $page_title = "Payment Gateway Settings - Zouple";
+        $gatewayStatus = [
+            [
+                'name' => 'Cash on Delivery',
+                'status' => 'Enabled',
+                'mode' => 'Manual',
+                'message' => 'Customers can place COD orders without gateway credentials.',
+                'required' => [],
+            ],
+            [
+                'name' => 'Paytm',
+                'status' => (config('paytm.merchant_id') && config('paytm.merchant_key') && config('paytm.merchant_website')) ? 'Configured' : 'Missing credentials',
+                'mode' => config('paytm.env', 'local'),
+                'message' => 'Add Paytm credentials in .env before using live Paytm payments.',
+                'required' => [
+                    'PAYTM_ENVIRONMENT',
+                    'PAYTM_MERCHANT_ID',
+                    'PAYTM_MERCHANT_KEY',
+                    'PAYTM_MERCHANT_WEBSITE',
+                    'PAYTM_CHANNEL',
+                    'PAYTM_INDUSTRY_TYPE',
+                ],
+            ],
+            [
+                'name' => 'PayPal',
+                'status' => (config('paypal.client_id') && config('paypal.secret')) ? 'Configured' : 'Missing credentials',
+                'mode' => config('paypal.settings.mode', 'live'),
+                'message' => 'Add PayPal credentials in .env before using live PayPal payments.',
+                'required' => [
+                    'PAYPAL_CLIENT_ID',
+                    'PAYPAL_SECRET',
+                    'PAYPAL_MODE',
+                ],
+            ],
+        ];
+
+        return view('masters.setting.payment_settings', compact('page_title', 'gatewayStatus'));
+    }
 }

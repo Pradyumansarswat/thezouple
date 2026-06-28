@@ -1,2 +1,10 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /masterAdmin
+Disallow: /storage
+Disallow: /vendor
+Disallow: /cart
+Disallow: /checkout
+Disallow: /wishlist
+
+Sitemap: https://zouple.in/sitemap.xml

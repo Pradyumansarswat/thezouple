@@ -23,10 +23,10 @@
             <img src="{{URL::asset('public/img/dark-logo.png')}}" alt="" width="13%">
         </div>
         <div class="login-box">
-            <form class="login-form" action="{{route('login')}}" method="post">
+            <form class="login-form" action="{{route('admin.login')}}" method="post">
                 @csrf
                 <h3 class="login-head"><i class="fa fa-lg fa-fw fa-user"></i>SIGN IN</h3>
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>

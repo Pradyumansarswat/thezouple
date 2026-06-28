@@ -9,7 +9,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -52,7 +52,7 @@
                                         <td>{{$data->banner_name}}</td>
                                         <td><b>{{$data->image_size}}</b></td>
                                        <td>
-                                       		<img src="{{URL::asset('public/upload/loginbanner/'.$data->image)}}" width="130px">
+                                       		<img src="{{ z_media_url($data->image, 'loginbanner') }}" width="130px">
                                        </td>
                                         
                                         <td class="text-center">

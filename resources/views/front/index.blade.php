@@ -8,15 +8,22 @@
         day = hour * 24;
 
     let countDown = new Date('{{$count_down}}').getTime(),
+        countDownTargets = ['days', 'hours', 'minutes', 'seconds'].map(function(id) {
+            return document.getElementById(id);
+        }),
         x = setInterval(function() {
+            if (countDownTargets.some(function(target) { return !target; })) {
+                clearInterval(x);
+                return;
+            }
 
             let now = new Date().getTime(),
                 distance = countDown - now;
 
-            document.getElementById('days').innerText = Math.floor(distance / (day)),
-                document.getElementById('hours').innerText = Math.floor((distance % (day)) / (hour)),
-                document.getElementById('minutes').innerText = Math.floor((distance % (hour)) / (minute)),
-                document.getElementById('seconds').innerText = Math.floor((distance % (minute)) / second);
+            countDownTargets[0].innerText = Math.floor(distance / (day)),
+                countDownTargets[1].innerText = Math.floor((distance % (day)) / (hour)),
+                countDownTargets[2].innerText = Math.floor((distance % (hour)) / (minute)),
+                countDownTargets[3].innerText = Math.floor((distance % (minute)) / second);
 
             //do something later when date is reached
             //if (distance < 0) {
@@ -70,19 +77,25 @@ for (var i = 0, l = videos.length; i < l; i++) {
 
 
 <!--======================   slider wrapper ======================-->
-
+@php
+    $mainVideo = null;
+    if(isset($main_video)) {
+        foreach($main_video as $mainVideoItem) {
+            if($mainVideoItem->video_id == 1 && !empty($mainVideoItem->video)) {
+                $mainVideo = $mainVideoItem;
+                break;
+            }
+        }
+    }
+@endphp
 <div class="container-fluid sliderWrapper">
     <div class="row">
         <div class="col-12 p-0 slidehover text-center m-auto">
-            @foreach($main_video as $main)
-            @if($main->video_id == 1)
-
-            <video autoplay preload="metadata" muted loop id="myVideo" src="{{URL::asset('public/upload/video/'.$main->video)}}">
-                <source type="video/mp4" width="100%">
-
+            @if($mainVideo)
+            <video autoplay preload="metadata" muted loop playsinline id="myVideo">
+                <source src="{{ z_media_url($mainVideo->video, 'video') }}" type="video/mp4">
             </video>
             @endif
-            @endforeach
             <!-- <iframe class="embed-player slide-media" width="980" height="520" src="https://www.youtube.com/embed/fVo9mjOPmvk?controls=0&fs=0&rel=0&showinfo=0&loop=1&start=1&autoplay=1" frameborder="0" allowfullscreen style="overflow:hidden;height:100%;width:100%" height="100%" width="100%" ></iframe>-->
             @if(!$slider_data->isEmpty())
             <div class="slideHoverContent  text-center m-auto  maxWidhtContainer">
@@ -111,6 +124,41 @@ for (var i = 0, l = videos.length; i < l; i++) {
 
 </div>
 
+<section class="zouple-trust-strip">
+    <div class="container-fluid">
+        <div class="row maxWidhtContainer">
+            <div class="col-6 col-md-3 zouple-trust-item">
+                <span class="zouple-trust-icon"><i class="fa fa-truck"></i></span>
+                <span>
+                    <strong>Fast Dispatch</strong>
+                    <small>Reliable delivery support</small>
+                </span>
+            </div>
+            <div class="col-6 col-md-3 zouple-trust-item">
+                <span class="zouple-trust-icon"><i class="fa fa-shield"></i></span>
+                <span>
+                    <strong>Secure Checkout</strong>
+                    <small>Protected payment journey</small>
+                </span>
+            </div>
+            <div class="col-6 col-md-3 zouple-trust-item">
+                <span class="zouple-trust-icon"><i class="fa fa-star"></i></span>
+                <span>
+                    <strong>Premium Quality</strong>
+                    <small>Designed for daily wear</small>
+                </span>
+            </div>
+            <div class="col-6 col-md-3 zouple-trust-item">
+                <span class="zouple-trust-icon"><i class="fa fa-whatsapp"></i></span>
+                <span>
+                    <strong>Bulk Support</strong>
+                    <small>Quick WhatsApp enquiry</small>
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="bg-white">
 
     <!--====================   category =============-->
@@ -131,7 +179,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
                     <div class="item px-2">
                         <a href="{{url('category',$data->slug)}}" class="text-dark">
                             <div class="cards cardCat">
-                                <img src="{{URL::asset('public/upload/category/'.$data->image)}}" class="img-responsive" alt="Cards Image" width="100%">
+                                <img src="{{ z_media_url($data->image, 'category') }}" class="img-responsive" alt="Cards Image" width="100%">
                                 <div class="text-white px-2 cartCatTitle">
                                     <?php
                                 $des = $data->title;
@@ -163,7 +211,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
         @foreach($customer_data as $data)
         <div class="row pb-5 maxWidhtContainer ">
             <div class="col-sm-5">
-                <img src="{{URL::asset('public/upload/customershirt/'.$data->image)}}" width="100%">
+                <img src="{{ z_media_url($data->image, 'customershirt') }}" width="100%">
             </div>
             <div class="col-sm-7 font-weight-normal text-justify m-sm-0 m-xs-3 " style="font-size=" 14px !important>
                 <h6 style="font-size:18px !important" class="mt-sm-0 mt-3">{{$data->heading}}</h6>
@@ -176,7 +224,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
                 <div class="col-12 text-center mt-3">
                     <a href="{{url('designShirt')}}">
                         <button type="submit" class="cta border-0">
-                            <span>Customize Shirt</span>
+                            <span>Flat Number Sign</span>
                             <svg width="13px" height="10px" viewBox="0 0 13 10">
                                 <path d="M1,5 L11,5"></path>
                                 <polyline points="8 1 12 5 8 9"></polyline>
@@ -230,7 +278,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
                         <a href="{{url('product', $arrivals->slug)}}">
                             <div class="card " style="border-radius: 15px; overflow: hidden;">
                                 <div class="card-body p-0 position-relative">
-                                    <img src="{{URL::asset('public/upload/product/'.$arrivals->product_header_image)}}" width="100%">
+                                    <img src="{{ z_media_url($arrivals->product_header_image, 'product') }}" width="100%">
                                 </div>
                                 <?php 
                             $currencySession = Session::get('currency');
@@ -321,8 +369,10 @@ for (var i = 0, l = videos.length; i < l; i++) {
     <!--====================   video blog ====================-->
 @php
     $subVideo = null;
-    foreach($main_video as $sv) {
-        if($sv->video_id == 2) { $subVideo = $sv; break; }
+    if(isset($main_video)) {
+        foreach($main_video as $sv) {
+            if($sv->video_id == 2) { $subVideo = $sv; break; }
+        }
     }
 @endphp
 @if($subVideo && !empty($subVideo->video))
@@ -330,7 +380,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
     <div class="row">
         <div class="col-12 p-0 videoBlog position-relative">
             <video autoplay muted loop id="myVideo2">
-                <source src="{{URL::asset('public/upload/video/'.$subVideo->video)}}" type="video/mp4" width="100%" height="400px">
+                <source src="{{ z_media_url($subVideo->video, 'video') }}" type="video/mp4" width="100%" height="400px">
             </video>
             <div class="videoHover d-flex maxWidhtContainer">
                 <div class="align-self-center text-white">
@@ -346,7 +396,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
 
 
     <!--====================  feature / Why Choose Zouple ====================-->
-
+@if(isset($testimonials) && !$testimonials->isEmpty())
 <div class="container-fluid py-5" id="why-choose-zouple">
     <style>
     #why-choose-zouple {
@@ -461,17 +511,20 @@ for (var i = 0, l = videos.length; i < l; i++) {
             <div class="reviews-heading">Why Choose Zouple</div>
             <div class="reviews-sub">What our customers say</div>
         </div>
-        @if(isset($testimonials) && !$testimonials->isEmpty())
         <div class="owl-carousel owl-theme" id="owl-reviews">
             @foreach($testimonials as $t)
+            @php
+                $testimonialImage = trim((string) $t->image);
+                $hasTestimonialImage = z_media_exists($testimonialImage, 'testimonial');
+            @endphp
             <div class="item">
                 <div class="review-slide-card">
                     <div class="review-quote">&ldquo;</div>
                     <div class="review-stars">★★★★★</div>
                     <div class="review-text">{{ strip_tags($t->description) }}</div>
                     <div class="d-flex align-items-center">
-                        @if($t->image)
-                        <img src="{{URL::asset('public/upload/testimonial/'.$t->image)}}" class="review-avatar" alt="{{$t->name}}">
+                        @if($hasTestimonialImage)
+                        <img src="{{ z_media_url($testimonialImage, 'testimonial') }}" class="review-avatar" alt="{{$t->name}}">
                         @else
                         <div class="review-avatar-placeholder">{{ strtoupper(substr($t->name, 0, 1)) }}</div>
                         @endif
@@ -504,11 +557,9 @@ for (var i = 0, l = videos.length; i < l; i++) {
             });
         });
         </script>
-        @else
-        <div class="text-center" style="color:rgba(255,255,255,0.4);padding:40px 0;">No reviews yet. Be the first to share your experience!</div>
-        @endif
     </div>
 </div>
+@endif
 
     <!--=====================   end features ================-->
 
@@ -523,7 +574,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
                     <div class="col-12  col-sm-4 col-md-4 px-0">
                         <div class="box">
                             <div class="ribbon ribbon-top-left"><span>Flash Sale</span></div>
-                            <img src="{{URL::asset('public/upload/product/'.$view_flash->product_header_image)}}" width="100%">
+                            <img src="{{ z_media_url($view_flash->product_header_image, 'product') }}" width="100%">
                         </div>
                     </div>
 
@@ -609,7 +660,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
             @else
             @foreach($flash_sales_data as $flash)
             <div class="col-md-12 col-lg-6 pb-5 h-100">
-                <img src="{{URL::asset('public/upload/flashbanner/'.$flash->image)}}" width="100%">
+                <img src="{{ z_media_url($flash->image, 'flashbanner') }}" width="100%">
             </div>
             @endforeach
             @endif
@@ -617,7 +668,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
                 <div class="owl-carousel shadow owl-theme owl-custom-arrow" id="owl-testimonials">
                     @foreach($banner_data as $banner)
                     <div class="item">
-                        <img src="{{URL::asset('public/upload/offerbanner/'.$banner->image)}}" width="100%" height="100%">
+                        <img src="{{ z_media_url($banner->image, 'offerbanner') }}" width="100%" height="100%">
 
                     </div>
                     @endforeach
@@ -760,11 +811,11 @@ for (var i = 0, l = videos.length; i < l; i++) {
 
         <div class="col-12 bulk-enquiry-wrapper">
 
-            <a href="https://wa.me/916375134498?text=Hello%20Zouple%20Team,%0A%0AI%20am%20interested%20in%20placing%20a%20bulk%20order.%20Please%20share%20product%20details,%20wholesale%20pricing,%20MOQ%20(Minimum%20Order%20Quantity),%20and%20delivery%20timelines.%0A%0AThank%20you."
+            <a href="{{ $bulk_whatsapp_link ?? 'https://wa.me/?text=Hello%20Zouple%2C%20I%20want%20to%20enquire%20about%20bulk%20order.' }}"
                target="_blank"
                class="bulk-enquiry-btn">
 
-                <div class="icon">📦</div>
+                <div class="icon"><i class="fa fa-whatsapp"></i></div>
 
                 <div class="content">
                     <span class="small-text">Wholesale & Bulk Orders</span>
@@ -784,7 +835,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
         <div class="col-md-6  pb-5">
             <div class="blog-card row mx-0">
                 <div class="meta col-12 col-md-6">
-                    <div class="photo" style="background-image: url({{URL::asset('public/upload/blog/'.$blog->front_image)}}); height:300px; background-size:cover"></div>
+                    <div class="photo" style="background-image: url({{ z_media_url($blog->front_image, 'blog') }}); height:300px; background-size:cover"></div>
                     <ul class="details list-unstyled" >
                         <li class="author" ><a href="{{url('blogShow',$blog->slug)}}">{{$blog->heading}}</a></li>
                         <li class="date py-2" >

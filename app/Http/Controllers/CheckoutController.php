@@ -15,6 +15,8 @@ use App\User;
 use App\Order;
 use App\Category;
 use Mail;
+use Log;
+use App\Services\AdminRecycleBinService;
 
 
 use Illuminate\Support\Facades\Input;
@@ -44,16 +46,47 @@ class CheckoutController extends Controller
     {
         /** PayPal api context **/
         $paypal_conf = \Config::get('paypal');
-        $this->_api_context = new ApiContext(new OAuthTokenCredential(
-            $paypal_conf['client_id'],
-            $paypal_conf['secret'])
-        );
-        $this->_api_context->setConfig($paypal_conf['settings']);
+        if (!empty($paypal_conf['client_id']) && !empty($paypal_conf['secret'])) {
+            $this->_api_context = new ApiContext(new OAuthTokenCredential(
+                $paypal_conf['client_id'],
+                $paypal_conf['secret'])
+            );
+            $this->_api_context->setConfig($paypal_conf['settings']);
+        }
         
         
         
         
     }
+
+    private function applyCurrentCartOwner($query, Request $request, $table = 'carts')
+    {
+        $ip = $request->ip();
+
+        if (Auth::check()) {
+            $userId = Auth::user()->id;
+
+            return $query->where(function ($ownerQuery) use ($table, $ip, $userId) {
+                $ownerQuery->where($table . '.user_id', $userId)
+                    ->orWhere(function ($guestQuery) use ($table, $ip) {
+                        $guestQuery->where($table . '.ip_address', $ip)
+                            ->where(function ($emptyUserQuery) use ($table) {
+                                $emptyUserQuery->whereNull($table . '.user_id')
+                                    ->orWhere($table . '.user_id', 0)
+                                    ->orWhere($table . '.user_id', '');
+                            });
+                    });
+            });
+        }
+
+        return $query->where($table . '.ip_address', $ip)
+            ->where(function ($guestQuery) use ($table) {
+                $guestQuery->whereNull($table . '.user_id')
+                    ->orWhere($table . '.user_id', 0)
+                    ->orWhere($table . '.user_id', '');
+            });
+    }
+
     public function checkout_details(Request $request)
     {  
         
@@ -90,16 +123,15 @@ class CheckoutController extends Controller
                 ->where('user_information.user_id',Auth::user()->id)
                 ->where('user_information.addresstype','Shipping')->get();
         
-         $data['cart_data'] = DB::table('carts')
+         $data['cart_data'] = $this->applyCurrentCartOwner(DB::table('carts')
              ->join('product_quantity','product_quantity.product_quantity_id','carts.product_qty_id')
              ->join('products', 'products.product_id', '=', 'carts.product_id')
-             ->where('carts.ip_address',$ip)
-             ->orWhere ('carts.user_id', Auth::user()->id)
+             , $request)
              ->get();
         
-         $shipping = DB::table('carts')
+         $shipping = $this->applyCurrentCartOwner(DB::table('carts')
                      ->join('products', 'products.product_id', '=', 'carts.product_id')
-                     ->where('carts.ip_address',$ip)
+                     , $request)
                     ->max('products.product_shipping');
 
 
@@ -185,7 +217,7 @@ class CheckoutController extends Controller
         
         if(isset($proIds))
         {
-            $pros = DB::table('products')->whereIn('product_id', $proIds)->get();
+            $pros = AdminRecycleBinService::activeTable('products')->whereIn('product_id', $proIds)->get();
             foreach($pros as $datas)
             {
                 $pro_id = $datas->product_id;
@@ -415,7 +447,11 @@ class CheckoutController extends Controller
             $amount = number_format($amount,2);
             $amount = (float) str_replace(',', '', $amount);
             $data_for_request = $this->handlePaytmRequest($order_number,$price,$user_id);
-            $paytm_txn_url = 'https://securegw.paytm.in/order/process';         
+            if (!$this->hasPaytmCredentials()) {
+                $request->session()->flash('alert-warning','Paytm is not configured yet. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            }
+            $paytm_txn_url = $this->paytmTransactionUrl();
             $paramList = $data_for_request['paramList'];
             $checkSum = $data_for_request['checkSum'];
             
@@ -424,7 +460,10 @@ class CheckoutController extends Controller
         
         else
         {
-            
+            if (!$this->hasPaypalCredentials()) {
+                $request->session()->flash('alert-warning','PayPal is not configured yet. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            }
              $amount = number_format($price);
             $amount_1 = (float) str_replace(',', '', $amount);
             
@@ -461,14 +500,13 @@ class CheckoutController extends Controller
             try {
                 $payment->create($this->_api_context);
             } catch (\PayPal\Exception\PPConnectionException $ex) {
-                die($ex);
-                if (\Config::get('app.debug')) {
-                    $request->session()->flash('alert-danger','Sorry, your order is not place because there have connection time out issue.');
-                    return Redirect::to('/');
-                } else {
-                      $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-                    return Redirect::to('/');
-                }
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            } catch (\Exception $ex) {
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
             }
             foreach ($payment->getLinks() as $link) {
                 if ($link->getRel() == 'approval_url') {
@@ -484,8 +522,8 @@ class CheckoutController extends Controller
             if (isset($redirect_url)) {
                 return Redirect::away($redirect_url);
             }
-            $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-            return Redirect::to('/');            
+            $request->session()->flash('alert-danger','Payment gateway did not return a redirect URL. Your order is saved as payment pending.');
+            return Redirect::to('yourOrder');            
         }
 
         
@@ -497,6 +535,12 @@ class CheckoutController extends Controller
 
     public function goToPaymentSystem(Request $request)
     {
+        $this->validate($request, [
+            'billingAddress' => 'required',
+            'shippingAddress' => 'required',
+            'payment_method' => 'required|in:paytm,paypal,cod',
+            'total_amount' => 'required|numeric|min:0',
+        ]);
         
         /* Currency Type */
         $currency_type = Session::get('currency');
@@ -522,17 +566,23 @@ class CheckoutController extends Controller
         }
        /*return $request; */
         $user_id = Auth::user()->id;
+        $billing = $request->billingAddress;
+        $shipping = $request->shippingAddress;
+        $billingAddress = DB::table('user_information')->where('user_id', $user_id)->where('user_information_id', $billing)->first();
+        $shippingAddress = DB::table('user_information')->where('user_id', $user_id)->where('user_information_id', $shipping)->first();
+        if (!$billingAddress || !$shippingAddress) {
+            $request->session()->flash('alert-danger', 'Please select valid billing and shipping addresses before payment.');
+            return Redirect::back()->withInput();
+        }
          
          //Address Default Update
-            $billing = $request->billingAddress;
-            $shipping = $request->shippingAddress;
             $inpu['default_address'] = "YES";
             DB::table('user_information')->where('user_information_id',$billing)->update($inpu);
             DB::table('user_information')->where('user_information_id',$shipping)->update($inpu);
         //
         if(isset($request->checksame))
         {
-            if($request->checksame = "on")
+            if($request->checksame == "on")
             {
                 $bills_num = DB::table('user_information')->where('user_information_id',$request->shippingAddress)->get();
                 foreach($bills_num as $object)
@@ -584,17 +634,25 @@ class CheckoutController extends Controller
             $input['shipping_address_id'] = DB::getPdo()->lastInsertId();
         }
          $ip = $request->ip();
-        $cart_data = DB::table('carts')
+        $cart_data = $this->applyCurrentCartOwner(DB::table('carts')
              ->join('product_quantity','product_quantity.product_quantity_id','carts.product_qty_id')
              ->join('products', 'products.product_id', '=', 'carts.product_id')
-             ->where('carts.ip_address',$ip)
-             ->orWhere ('carts.user_id', Auth::user()->id)
+             , $request)
              ->get();
+
+        if ($cart_data->isEmpty()) {
+            $request->session()->flash('alert-danger', 'Your cart is empty. Please add products before checkout.');
+            return Redirect::to('cart');
+        }
         
+        $pro_details = [];
         foreach($cart_data as $data)
         {
             $product_id = $data->product_id;
             $attrvalues = json_decode($data->attributes_value);
+            if (!is_array($attrvalues)) {
+                $attrvalues = [];
+            }
             $attributes_value = implode(',',$attrvalues);
             $product_qty =  $data->product_qty;
             $product_amt =  round($data->$net_with_gst);
@@ -627,7 +685,9 @@ class CheckoutController extends Controller
         $cou_use['coupon_id'] = $request->coupon_id;
         $cou_use['coupon_type'] = $request->coupon_type;
          /*return $input;*/
-        DB::table('coupon_uses') ->insert($cou_use);
+        if (!empty($request->coupon_id)) {
+            DB::table('coupon_uses')->insert($cou_use);
+        }
          
         $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $order = mt_rand(10, 99)
@@ -640,12 +700,34 @@ class CheckoutController extends Controller
         $order_number = str_shuffle($order).$mm.$yy;
         $input['order_date'] = date('Y-m-d H:i:s');
         $input['order_number'] = $order_number;
+        $input['payment_method'] = $request->payment_method;
+        $input['payment_status'] = $request->payment_method === 'cod' ? 'COD_PENDING' : 'PENDING';
+        $input['payment_getway'] = strtoupper($request->payment_method);
         
         DB::table('order_system')->insert($input);
         $user_id = Auth::user()->id;
         $amount = round($request->total_amount);
        
-        if($currency_type == "rupee_price")
+        if($request->payment_method === 'cod')
+        {
+            $this->confirmOfflineOrder($order_number, $request);
+            $request->session()->flash('alert-success','Your order has been placed with Cash on Delivery.');
+            return Redirect::to('yourOrder');
+        }
+
+        if($request->payment_method === 'paytm' && !$this->hasPaytmCredentials())
+        {
+            $request->session()->flash('alert-warning','Payment gateway is not configured yet. Your order is saved as payment pending.');
+            return Redirect::to('yourOrder');
+        }
+
+        if($request->payment_method === 'paypal' && !$this->hasPaypalCredentials())
+        {
+            $request->session()->flash('alert-warning','PayPal is not configured yet. Your order is saved as payment pending.');
+            return Redirect::to('yourOrder');
+        }
+
+        if($request->payment_method === 'paytm')
         {
             
             
@@ -653,7 +735,7 @@ class CheckoutController extends Controller
             $amount = (float) str_replace(',', '', $amount);
             
             $data_for_request = $this->handlePaytmRequest($order_number,$amount,$user_id);
-            $paytm_txn_url = 'https://securegw.paytm.in/order/process';
+            $paytm_txn_url = $this->paytmTransactionUrl();
             $paramList = $data_for_request['paramList'];
             $checkSum = $data_for_request['checkSum'];
 
@@ -699,14 +781,13 @@ class CheckoutController extends Controller
             try {
                 $payment->create($this->_api_context);
             } catch (\PayPal\Exception\PPConnectionException $ex) {
-                die($ex);
-                if (\Config::get('app.debug')) {
-                    $request->session()->flash('alert-danger','Sorry, your order is not place because there have connection time out issue.');
-                    return Redirect::to('/');
-                } else {
-                      $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-                    return Redirect::to('/');
-                }
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            } catch (\Exception $ex) {
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
             }
             foreach ($payment->getLinks() as $link) {
                 if ($link->getRel() == 'approval_url') {
@@ -722,8 +803,8 @@ class CheckoutController extends Controller
             if (isset($redirect_url)) {
                 return Redirect::away($redirect_url);
             }
-            $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-            return Redirect::to('/');            
+            $request->session()->flash('alert-danger','Payment gateway did not return a redirect URL. Your order is saved as payment pending.');
+            return Redirect::to('yourOrder');            
         }  
     }
     
@@ -837,7 +918,9 @@ class CheckoutController extends Controller
         $cou_use['coupon_id'] = $request->coupon_id;
         $cou_use['coupon_type'] = $request->coupon_type;
          
-        DB::table('coupon_uses') ->insert($cou_use);
+        if (!empty($request->coupon_id)) {
+            DB::table('coupon_uses')->insert($cou_use);
+        }
          
         $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $order = mt_rand(10, 99)
@@ -858,10 +941,14 @@ class CheckoutController extends Controller
         
         if($currency_type == "rupee_price")
         {  
+            if (!$this->hasPaytmCredentials()) {
+                $request->session()->flash('alert-warning','Paytm is not configured yet. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            }
           $amount = number_format($amount);
             $amount = (float) str_replace(',', '', $amount);
             $data_for_request = $this->handlePaytmRequest($order_number,$amount,$user_id);
-            $paytm_txn_url = 'https://securegw.paytm.in/order/process';
+            $paytm_txn_url = $this->paytmTransactionUrl();
             $paramList = $data_for_request['paramList'];
             $checkSum = $data_for_request['checkSum'];
 
@@ -869,6 +956,10 @@ class CheckoutController extends Controller
         }
         else
         {
+            if (!$this->hasPaypalCredentials()) {
+                $request->session()->flash('alert-warning','PayPal is not configured yet. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            }
             
             $amount = number_format($amount);
             $amount_1 = (float) str_replace(',', '', $amount);
@@ -906,14 +997,13 @@ class CheckoutController extends Controller
             try {
                 $payment->create($this->_api_context);
             } catch (\PayPal\Exception\PPConnectionException $ex) {
-                die($ex);
-                if (\Config::get('app.debug')) {
-                    $request->session()->flash('alert-danger','Sorry, your order is not place because there have connection time out issue.');
-                    return Redirect::to('/');
-                } else {
-                      $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-                    return Redirect::to('/');
-                }
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            } catch (\Exception $ex) {
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
             }
             foreach ($payment->getLinks() as $link) {
                 if ($link->getRel() == 'approval_url') {
@@ -929,8 +1019,8 @@ class CheckoutController extends Controller
             if (isset($redirect_url)) {
                 return Redirect::away($redirect_url);
             }
-            $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-            return Redirect::to('/');            
+            $request->session()->flash('alert-danger','Payment gateway did not return a redirect URL. Your order is saved as payment pending.');
+            return Redirect::to('yourOrder');            
         }           
     }
     
@@ -1043,7 +1133,9 @@ class CheckoutController extends Controller
         $cou_use['coupon_id'] = $request->coupon_id;
         $cou_use['coupon_type'] = $request->coupon_type;
          
-        DB::table('coupon_uses') ->insert($cou_use);
+        if (!empty($request->coupon_id)) {
+            DB::table('coupon_uses')->insert($cou_use);
+        }
          
         $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $order = mt_rand(10, 99)
@@ -1064,11 +1156,15 @@ class CheckoutController extends Controller
         
         if($currency_type == "rupee_price")
         {
+            if (!$this->hasPaytmCredentials()) {
+                $request->session()->flash('alert-warning','Paytm is not configured yet. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            }
             $amount = (int)number_format($amount);
             $amount = number_format($amount,2);
             $amount = (float) str_replace(',', '', $amount);
             $data_for_request = $this->handlePaytmRequest($order_number,$amount,$user_id);
-            $paytm_txn_url = 'https://securegw.paytm.in/order/process';
+            $paytm_txn_url = $this->paytmTransactionUrl();
             $paramList = $data_for_request['paramList'];
             $checkSum = $data_for_request['checkSum'];
             return view('front.payment.paytm-merchant-form', compact('paytm_txn_url', 'paramList', 'checkSum' ));
@@ -1076,6 +1172,10 @@ class CheckoutController extends Controller
         
         else
         {
+            if (!$this->hasPaypalCredentials()) {
+                $request->session()->flash('alert-warning','PayPal is not configured yet. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            }
             
              $amount = number_format($amount);
             $amount_1 = (float) str_replace(',', '', $amount);
@@ -1113,14 +1213,13 @@ class CheckoutController extends Controller
             try {
                 $payment->create($this->_api_context);
             } catch (\PayPal\Exception\PPConnectionException $ex) {
-                die($ex);
-                if (\Config::get('app.debug')) {
-                    $request->session()->flash('alert-danger','Sorry, your order is not place because there have connection time out issue.');
-                    return Redirect::to('/');
-                } else {
-                      $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-                    return Redirect::to('/');
-                }
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
+            } catch (\Exception $ex) {
+                Log::error('PayPal payment failed', ['order_number' => $order_number, 'error' => $ex->getMessage()]);
+                $request->session()->flash('alert-danger','Payment gateway is temporarily unavailable. Your order is saved as payment pending.');
+                return Redirect::to('yourOrder');
             }
             foreach ($payment->getLinks() as $link) {
                 if ($link->getRel() == 'approval_url') {
@@ -1136,8 +1235,8 @@ class CheckoutController extends Controller
             if (isset($redirect_url)) {
                 return Redirect::away($redirect_url);
             }
-            $request->session()->flash('alert-danger','Sorry, your order is not place because there have some technical issue.');
-            return Redirect::to('/');            
+            $request->session()->flash('alert-danger','Payment gateway did not return a redirect URL. Your order is saved as payment pending.');
+            return Redirect::to('yourOrder');            
         }  
         
         
@@ -1158,15 +1257,15 @@ class CheckoutController extends Controller
         // $param List
         
         // Create an array having all required parameters for creating checksum.
-		$paramList["MID"] = 'aRUKQB44056800848352';
+		$paramList["MID"] = config('paytm.merchant_id');
 		$paramList["ORDER_ID"] = $order_id;
 		$paramList["CUST_ID"] = $user_id;
-		$paramList["INDUSTRY_TYPE_ID"] = 'Retail';
-		$paramList["CHANNEL_ID"] = 'WEB';
-		$paramList["TXN_AMOUNT"] = $amount;
-		$paramList["WEBSITE"] = 'DEFAULT';
+		$paramList["INDUSTRY_TYPE_ID"] = config('paytm.industry_type', 'Retail');
+		$paramList["CHANNEL_ID"] = config('paytm.channel', 'WEB');
+		$paramList["TXN_AMOUNT"] = number_format((float) $amount, 2, '.', '');
+		$paramList["WEBSITE"] = config('paytm.merchant_website');
 		$paramList["CALLBACK_URL"] = url('/paytm-callback');
-		$paytm_merchant_key = 'yAVZIO8X8a#h&Cfc';
+		$paytm_merchant_key = config('paytm.merchant_key');
         
         //Here checksum string will return by getChecksumFromArray() function.
 		$checkSum = getChecksumFromArray($paramList, $paytm_merchant_key);
@@ -1435,13 +1534,13 @@ class CheckoutController extends Controller
     
     public function getConfigPaytmSetting()
     {
-        define('PAYTM_ENVIRONMENT', 'PROD'); // PROD
-        define('PAYTM_MERCHANT_KEY', 'yAVZIO8X8a#h&Cfc'); //Change this constant's value with Merchant key received from Paytm.
-        define('PAYTM_MERCHANT_MID', 'aRUKQB44056800848352'); //Change this constant's value with MID (Merchant ID) received from Paytm.
-        define('PAYTM_MERCHANT_WEBSITE', 'DEFAULT'); //Change this constant's value with Website name received from Paytm.
+        if (!defined('PAYTM_ENVIRONMENT')) define('PAYTM_ENVIRONMENT', config('paytm.env') === 'production' ? 'PROD' : 'TEST');
+        if (!defined('PAYTM_MERCHANT_KEY')) define('PAYTM_MERCHANT_KEY', config('paytm.merchant_key'));
+        if (!defined('PAYTM_MERCHANT_MID')) define('PAYTM_MERCHANT_MID', config('paytm.merchant_id'));
+        if (!defined('PAYTM_MERCHANT_WEBSITE')) define('PAYTM_MERCHANT_WEBSITE', config('paytm.merchant_website'));
 
-        /*$PAYTM_STATUS_QUERY_NEW_URL='https://securegw-stage.paytm.in/merchant-status/getTxnStatus';
-        $PAYTM_TXN_URL='https://securegw-stage.paytm.in/theia/processTransaction';*/
+        $PAYTM_STATUS_QUERY_NEW_URL='https://securegw-stage.paytm.in/merchant-status/getTxnStatus';
+        $PAYTM_TXN_URL='https://securegw-stage.paytm.in/order/process';
         if (PAYTM_ENVIRONMENT == 'PROD') {
             $PAYTM_STATUS_QUERY_NEW_URL='https://securegw.paytm.in/merchant-status/getTxnStatus';
             $PAYTM_TXN_URL='https://securegw.paytm.in/order/process';
@@ -1455,14 +1554,84 @@ class CheckoutController extends Controller
    
     }
 
+    private function hasPaytmCredentials()
+    {
+        return config('paytm.merchant_id') && config('paytm.merchant_key') && config('paytm.merchant_website');
+    }
+
+    private function hasPaypalCredentials()
+    {
+        $paypal = config('paypal');
+        return !empty($paypal['client_id']) && !empty($paypal['secret']) && $this->_api_context;
+    }
+
+    private function paytmTransactionUrl()
+    {
+        return config('paytm.env') === 'production'
+            ? 'https://securegw.paytm.in/order/process'
+            : 'https://securegw-stage.paytm.in/order/process';
+    }
+
+    private function confirmOfflineOrder($order_number, Request $request)
+    {
+        $order = DB::table('order_system')->where('order_number', $order_number)->first();
+        if (!$order || $order->order_type === 'DESIGN-SHIRT') {
+            return;
+        }
+
+        $products = json_decode($order->product_details);
+        if ($products) {
+            foreach ($products as $key => $productLine) {
+                $parts = explode('-', $productLine);
+                if (count($parts) < 2) {
+                    continue;
+                }
+                $attributes = json_encode(explode(',', $parts[0]));
+                $qty = (int) $parts[1];
+                $row = DB::table('product_quantity')->where('product_id', $key)->where('attributes_value', $attributes)->first();
+                if ($row) {
+                    DB::table('product_quantity')->where('product_quantity_id', $row->product_quantity_id)->update([
+                        'product_quantity' => max(0, ((int) $row->product_quantity) - $qty),
+                    ]);
+                }
+            }
+        }
+
+        $this->applyCurrentCartOwner(DB::table('carts'), $request)->delete();
+    }
+
     
     public function paytmcallback(Request $request)
     {
         /*return $request;*/
         $order_number = $request->ORDERID;
-        if($request->STATUS == "TXN_SUCCESS")
+        if (empty($order_number)) {
+            Log::warning('Paytm callback missing order id', ['payload' => $request->all()]);
+            $request->session()->flash('alert-danger','Payment response was missing order details. Please contact support if money was deducted.');
+            return redirect('yourOrder');
+        }
+
+        if ($request->filled('CHECKSUMHASH') && $this->hasPaytmCredentials()) {
+            $this->getAllEncdecFunc();
+            $paytmParams = $request->except('CHECKSUMHASH');
+            $isValidChecksum = verifychecksum_e($paytmParams, config('paytm.merchant_key'), $request->CHECKSUMHASH) === 'TRUE';
+            if (!$isValidChecksum) {
+                Log::warning('Invalid Paytm callback checksum', ['order_number' => $order_number]);
+                $request->session()->flash('alert-danger','Payment verification failed. Please contact support if money was deducted.');
+                return redirect('yourOrder');
+            }
+        }
+
+        $existingOrder = DB::table('order_system')->where('order_number', $order_number)->first();
+        if (!$existingOrder) {
+            Log::warning('Paytm callback order not found', ['order_number' => $order_number]);
+            $request->session()->flash('alert-danger','Payment response did not match any order. Please contact support if money was deducted.');
+            return redirect('yourOrder');
+        }
+        $alreadySuccessful = $existingOrder && $existingOrder->payment_status === 'TXN_SUCCESS';
+        if($request->STATUS == "TXN_SUCCESS" && !$alreadySuccessful)
         {
-            $orderDetails = DB::table('order_system')->where('order_number',$order_number)->get();
+            $orderDetails = AdminRecycleBinService::activeTable('order_system')->where('order_number',$order_number)->get();
             foreach($orderDetails as $data)
             {
                 $order_type = $data->order_type;
@@ -1470,6 +1639,9 @@ class CheckoutController extends Controller
                 if($order_type != "DESIGN-SHIRT")
                 {
                     $pros = json_decode($data->product_details);
+                    if (!$pros) {
+                        continue;
+                    }
                     foreach($pros as $key => $prosin)
                     {
                         $pros_details = explode('-',$prosin);
@@ -1485,8 +1657,7 @@ class CheckoutController extends Controller
                 }
                 if($data->order_type == "CHECKOUT")
                 {
-                    $ip = $request->ip();
-                    DB::table('carts')->where('user_id',Auth::user()->id)->orwhere('ip_address',$ip)->delete();
+                    $this->applyCurrentCartOwner(DB::table('carts'), $request)->delete();
                 }
             }
         }
@@ -1519,14 +1690,26 @@ class CheckoutController extends Controller
     
    
     public function sendOrderMail($order_number)
-    {        
-        $user_name = Auth::user()->name;
+    {
+        $order = DB::table('order_system')->where('order_number', $order_number)->first();
+        if (!$order) {
+            Log::warning('Order email skipped because order was not found', ['order_number' => $order_number]);
+            return '';
+        }
+
+        $orderUser = DB::table('users')->where('id', $order->user_id)->first();
+        if (!$orderUser || empty($orderUser->email)) {
+            Log::warning('Order email skipped because user email was not found', ['order_number' => $order_number, 'user_id' => $order->user_id]);
+            return '';
+        }
+
+        $user_name = $orderUser->name;
         $logo_url = "https://thezouple.com/public/front/images/logo.png";
         $url = "https://thezouple.com/printInvoicesss/".$order_number;
-        $order_date = DB::table('order_system')->where('order_number',$order_number)->value('order_date');
+        $order_date = $order->order_date;
         $ord_date = date('d/M/Y', strtotime($order_date));
-        $datas = DB::table('order_system')->where('order_number',$order_number)->value('product_details');
-        $check_order = DB::table('order_system')->where('order_number',$order_number)->value('order_type');
+        $datas = $order->product_details;
+        $check_order = $order->order_type;
         
         $messageBody1="<!DOCTYPE html><html lang='en'>
 
@@ -1638,7 +1821,7 @@ class CheckoutController extends Controller
                             <p style='border-bottom: 3px solid #000000;'> </p>
                         
                           
-                         <div style='font-size: 16px;margin-top:30px; margin-bottom: 5px; color:#969696; text-align: left;' In case of any questions please write to us at contact@thezouple.com and we will revert to you as soon as we receive your email. </div>
+                         <div style='font-size: 16px;margin-top:30px; margin-bottom: 5px; color:#969696; text-align: left;' In case of any questions please write to us at contact@zouple.in and we will revert to you as soon as we receive your email. </div>
                                              <div style='font-size: 16px; margin-top:40px; color:#969696; text-align: left; margin-left:15px;'>
                                                     Thank You,
                                                  </div>
@@ -1674,16 +1857,20 @@ class CheckoutController extends Controller
         }
         
         
-        $email=Auth::user()->email;
+        $email=$orderUser->email;
         $subject = "Order Placed Successfully ";
         $data['msg']=$messageBody1;
         $data['subject']=$subject;
         $data['email']=$email;
-        Mail::send([],[],  function ($message)  use($data) 
-        {
-            $message->to($data['email'])->subject($data['subject'])
-                ->setBody($data['msg'], 'text/html'); 
-        });
+        try {
+            Mail::send([],[],  function ($message)  use($data)
+            {
+                $message->to($data['email'])->subject($data['subject'])
+                    ->setBody($data['msg'], 'text/html');
+            });
+        } catch (\Exception $e) {
+            Log::error('Order email failed', ['order_number' => $order_number, 'email' => $email, 'error' => $e->getMessage()]);
+        }
         
         return $messageBody1;
   /*   echo $messageBody1;    */
@@ -1701,28 +1888,43 @@ class CheckoutController extends Controller
         $payment_id = Session::get('paypal_payment_id');
         /** clear the session payment ID **/
         Session::forget('paypal_payment_id');
-        if (empty(Input::get('PayerID')) || empty(Input::get('token'))) {
-            $request->session()->flash('alert-dabger','Sorry, your payment is not done so your order has not placed.');
+        if (!$this->hasPaypalCredentials() || !$payment_id) {
+            $request->session()->flash('alert-warning','PayPal session is missing or not configured. Please check your order status.');
             return Redirect::to('yourOrder');
         }
-        $payment = Payment::get($payment_id, $this->_api_context);
-        $execution = new PaymentExecution();
-        $execution->setPayerId(Input::get('PayerID'));
-        /**Execute the payment **/
-        $result = $payment->execute($execution, $this->_api_context);
+        if (empty(Input::get('PayerID')) || empty(Input::get('token'))) {
+            $request->session()->flash('alert-danger','Sorry, your payment is not done so your order has not placed.');
+            return Redirect::to('yourOrder');
+        }
+        try {
+            $payment = Payment::get($payment_id, $this->_api_context);
+            $execution = new PaymentExecution();
+            $execution->setPayerId(Input::get('PayerID'));
+            /**Execute the payment **/
+            $result = $payment->execute($execution, $this->_api_context);
+        } catch (\Exception $e) {
+            Log::error('PayPal status check failed', ['payment_id' => $payment_id, 'error' => $e->getMessage()]);
+            $request->session()->flash('alert-danger','Payment verification failed. Please contact support with your order details.');
+            return Redirect::to('yourOrder');
+        }
         if ($result->getState() == 'approved') {
            $update['transaction_id']   =   $request->token;  
            $update['order_status'] = "Confirmed";
            $update['order_date'] = date('Y-m-d H:i:s');
            $update['payment_status'] = "TXN_SUCCESS";
-           $order_number= DB::table('order_system')->where('transaction_id',$payment_id)->value('order_number');
-           $mailsend = $this->sendOrderMail($order_number);        
+           $order = DB::table('order_system')->where('transaction_id',$payment_id)->first();
+           $order_number = $order ? $order->order_number : null;
+           if ($order && $order->payment_status !== 'TXN_SUCCESS') {
+               $this->confirmOfflineOrder($order_number, $request);
+           }
+           if ($order_number) {
+               $mailsend = $this->sendOrderMail($order_number);
+           }
            DB::table('order_system')->where('transaction_id',$payment_id)->update($update);   
            $request->session()->flash('alert-success','Thank you for your purchase. Your order has been successfully placed.');
            return Redirect::to('yourOrder');
         }
         
         $request->session()->flash('alert-danger','Sorry, your payment is not done so your order has not placed.');
-        return Redirect::to('yourOrder');
     }
 }

@@ -118,7 +118,7 @@
                 <div class="col-sm-6 col-md-4 col-lg-4 mb-5 ">
                     <label for="{{$febric->febric_id}}" class="card " style="border-radius: 15px; overflow: hidden;">
                         <div class="card-body  cardDesign p-0 position-relative">
-                            <img src="{{URL::asset('public/upload/shirt/'.$febric->image)}}" width="100%">
+                            <img src="{{ z_media_url($febric->image, 'shirt') }}" width="100%">
                             <?php
                                 if(isset($febricss))
                                 {

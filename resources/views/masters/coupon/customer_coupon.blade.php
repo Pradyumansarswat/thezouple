@@ -28,7 +28,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -75,13 +75,15 @@
                                 <tr>
                                     <td>{{$i}}.</td>
                                     <td>
-                                        <?php
-                                         $user = json_decode($data->id);   
-                                        foreach($user as $users)
-                                        {
-                                            echo $userTitle[$users].",<br>";
-                                        }
-                                        ?>
+                                        @php
+                                            $userIds = json_decode($data->id, true);
+                                            $userIds = is_array($userIds) ? $userIds : array();
+                                        @endphp
+                                        @forelse($userIds as $users)
+                                            {{ $userTitle[$users] ?? ('Customer missing (#' . $users . ')') }}<br>
+                                        @empty
+                                            <span class="text-muted">No customers selected</span>
+                                        @endforelse
                                     </td>
                                     <td>{{$data->coupon_code}}</td>
                                     <td>
@@ -114,7 +116,7 @@
                                         <a href="{{route('customerCouponUpdate',$data->customer_coupon_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
 
 
-                                        <a href="{{route('customerCouponDelete',$data->customer_coupon_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
+                                        <a href="{{route('customerCouponDelete',$data->customer_coupon_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                     </td>
                                 </tr>
                                 @php $i++ @endphp

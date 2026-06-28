@@ -11,7 +11,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -33,6 +33,10 @@
                 </div>
                 <div class="card-box">
                     @foreach($testimonial_datas as $data)
+                    @php
+                        $testimonialImage = trim((string) $data->image);
+                        $hasTestimonialImage = z_media_exists($testimonialImage, 'testimonial');
+                    @endphp
                     <form action="{{route('testimonialEdit_save')}}" method="post" enctype="multipart/form-data">
                       @csrf
                       <input type="hidden" name="testimonial_id" value="{{$data->testimonial_id}}">
@@ -55,13 +59,26 @@
 
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label class="control-label"> Testimonial Image <span class="text-danger"> <b> * </b></span> <!-- <span class="text-danger">(Image Dimensions - 1920*700 Pixel *)</span> --></label>
-                                    <input class="form-control" type="file" name="image" accept="image/x-png,image/gif,image/jpeg">
+                                    <label class="control-label">
+                                        Testimonial Image
+                                        @if(!$hasTestimonialImage)
+                                            <span class="text-danger"> <b> * </b></span>
+                                        @else
+                                            <small class="text-muted">(optional)</small>
+                                        @endif
+                                    </label>
+                                    <input class="form-control" type="file" name="image" accept="image/png,image/gif,image/jpeg,image/webp" @if(!$hasTestimonialImage) required @endif>
                                 </div>
                             </div>
 
                             <div class="col-sm-6 pb-4">
-                                <img src="{{URL::asset('public/upload/testimonial/'.$data->image)}}" width="300px">  
+                                @if($hasTestimonialImage)
+                                    <img src="{{ z_media_url($testimonialImage, 'testimonial') }}" class="admin-testimonial-thumb" alt="{{ $data->name }}">
+                                @else
+                                    <div class="admin-testimonial-placeholder">
+                                        {{ strtoupper(substr(trim($data->name ?: 'Z'), 0, 1)) }}
+                                    </div>
+                                @endif
                             </div>
                             
                             

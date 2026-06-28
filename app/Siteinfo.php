@@ -16,6 +16,8 @@ class Siteinfo extends Model
         'meta_keyword',
         'meta_description',
         'email_signature',
+        'whatsapp_number',
+        'recycle_cleanup_days',
         'facebook_url',
         'linkedin_url',
         'instagram_url'

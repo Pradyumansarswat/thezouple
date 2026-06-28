@@ -84,7 +84,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -207,13 +207,13 @@
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label"> Product Header Image<span class="text-danger"><b> (184*245 Pixel *)</b></span></label>
-                                <input type="file" name="product_header_image" id="pincode" class="form-control" required accept="image/x-png,image/gif,image/jpeg">
+                                <input type="file" name="product_header_image" id="pincode" class="form-control" required accept="image/png,image/gif,image/jpeg,image/webp">
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label"> Product Images <span class="text-danger"><b> (Multiple Iamge - 720*900 Pixel *)</b></span></label>
-                                <input type="file" name="product_images[]" class="form-control" required accept="image/x-png,image/gif,image/jpeg" multiple>
+                                <input type="file" name="product_images[]" class="form-control" required accept="image/png,image/gif,image/jpeg,image/webp" multiple>
                             </div>
                         </div>
                     </div>

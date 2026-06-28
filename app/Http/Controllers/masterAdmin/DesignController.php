@@ -14,6 +14,7 @@ use App\ShirtCategory;
 use App\ShirtAttribut;
 
 use App\Helper\BasicHelper;
+use App\Services\AdminMediaService;
 
 class DesignController extends Controller
 {
@@ -45,13 +46,7 @@ class DesignController extends Controller
 
       if($request->file('image')!='')
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);  
+          $input['image']= $this->uploadShirtImage($request->file('image'));
       } 
            DB::table('febric')->insert($input);
             $request->session()->flash('alert-success','Febric has been sucessfully added.');
@@ -80,16 +75,8 @@ class DesignController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('febric')->where('febric_id','=',$febric_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteShirtImage($data);
+          $input['image']= $this->uploadShirtImage($request->file('image'));
 
       } 
       else
@@ -108,8 +95,7 @@ class DesignController extends Controller
     public function shirtCategoryDeleteFormat(Request $request,$febric_id)
   {
       $data=DB::table('febric')->where('febric_id','=',$febric_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
+          $this->deleteShirtImage($data);
       $m = DB::table('febric')->where('febric_id','=',$febric_id)->delete();
       $request->session()->flash('alert-success','Febric has been sucessfully deleted.');
       return Redirect::route('shirtCategory');
@@ -149,13 +135,7 @@ class DesignController extends Controller
 
       if($request->file('image')!='')
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);  
+          $input['image']= $this->uploadShirtImage($request->file('image'));
       } 
            DB::table('element')->insert($input);
             $request->session()->flash('alert-success','Elements has been sucessfully added.');
@@ -184,16 +164,8 @@ class DesignController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('element')->where('element_id','=',$element_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteShirtImage($data);
+          $input['image']= $this->uploadShirtImage($request->file('image'));
 
       } 
       else
@@ -211,8 +183,7 @@ class DesignController extends Controller
     public function shirtAttributDeleteFormat(Request $request,$element_id)
   {
       $data=DB::table('element')->where('element_id','=',$element_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
+          $this->deleteShirtImage($data);
       $m = DB::table('element')->where('element_id','=',$element_id)->delete();
       $request->session()->flash('alert-success','Elements has been sucessfully deleted.');
       return Redirect::route('shirtAttribut');
@@ -254,13 +225,7 @@ class DesignController extends Controller
 
       if($request->file('image')!='')
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);  
+          $input['image']= $this->uploadShirtImage($request->file('image'));
       } 
            DB::table('element_value')->insert($input);
             $request->session()->flash('alert-success','Elements Value has been sucessfully added.');
@@ -293,16 +258,8 @@ class DesignController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('element_value')->where('element_value_id','=',$element_value_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteShirtImage($data);
+          $input['image']= $this->uploadShirtImage($request->file('image'));
 
       } 
       else
@@ -320,8 +277,7 @@ class DesignController extends Controller
     public function attributValueDeleteFormat(Request $request,$element_value_id)
   {
       $data=DB::table('element_value')->where('element_value_id','=',$element_value_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
+          $this->deleteShirtImage($data);
       $m = DB::table('element_value')->where('element_value_id','=',$element_value_id)->delete();
       $request->session()->flash('alert-success','Elements Value has been sucessfully deleted.');
       return Redirect::route('attributValue');
@@ -359,13 +315,7 @@ class DesignController extends Controller
          
       if($request->file('image')!='')
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);  
+          $input['image']= $this->uploadShirtImage($request->file('image'));
       } 
            DB::table('shirt_size')->insert($input);
             $request->session()->flash('alert-success','Shirt Size has been sucessfully added.');
@@ -393,16 +343,8 @@ class DesignController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('shirt_size')->where('shirt_size_id','=',$shirt_size_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/shirt/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteShirtImage($data);
+          $input['image']= $this->uploadShirtImage($request->file('image'));
 
       } 
       else
@@ -421,8 +363,7 @@ class DesignController extends Controller
     public function shirtSizeDeleteFormat(Request $request,$shirt_size_id)
   {
       $data=DB::table('shirt_size')->where('shirt_size_id','=',$shirt_size_id)->value('image');
-          $fullpath=public_path('upload/shirt/').$data;
-          File::delete($fullpath);
+          $this->deleteShirtImage($data);
       $m = DB::table('shirt_size')->where('shirt_size_id','=',$shirt_size_id)->delete();
       $request->session()->flash('alert-success','Shirt Size has been sucessfully deleted.');
       return Redirect::route('shirtSize');
@@ -435,9 +376,16 @@ class DesignController extends Controller
     /* Shirt Size Design Code End */
 
     
-    
-    
-    
-    
+    private function uploadShirtImage($file)
+    {
+        $upload = app(AdminMediaService::class)->uploadImage($file, 'shirt-design', 'shirt');
+        return $upload['path'];
+    }
+
+    private function deleteShirtImage($image)
+    {
+        app(AdminMediaService::class)->deleteMedia($image, 'shirt', null, 'image');
+    }
+
     /*  Attribut Value Code End */
 }

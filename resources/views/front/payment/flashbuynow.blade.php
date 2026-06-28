@@ -240,8 +240,7 @@
                     }
                 });
             } else {
-                $('#addressSaveForm').attr('action', '{{url('
-                    address_save ')}}');
+                $('#addressSaveForm').attr('action', '{{url('address_save')}}');
                 $('#addSubmit').prop('type', 'submit');
             }
         } else {
@@ -271,8 +270,7 @@
                     }
                 });
             } else {
-                $('#addressSaveForm').attr('action', '{{url('
-                    address_save ')}}');
+                $('#addressSaveForm').attr('action', '{{url('address_save')}}');
                 $('#addSubmit').prop('type', 'submit');
             }
         } else {
@@ -527,7 +525,7 @@
                             <input type="hidden" name="product_qty_id" value="{{$data->product_quantity_id}}" id="product_qty_id">
                             <div class="row py-1 my-2 border">
                                 <div class="col-4 col-sm-2 p-0">
-                                    <img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="100%">
+                                    <img src="{{ z_media_url($data->product_header_image, 'product') }}" width="100%">
                                 </div>
                                 <div class="col-8 col-sm-6  py-2">
                                     <div class="h6 font-weight-normal m-0">{{$data->product_title}}</div>
@@ -801,8 +799,8 @@
                         <input type="text" placeholder="Enter your Address" class="form-control" id="Adress" name="address" required>
                     </div>
                     <div class="form-group">
-                        <label for="City">LandMark<span class="text-danger">*</span></label>
-                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark" required>
+                        <label for="City">LandMark</label>
+                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark">
                     </div>
 
                     <div class="form-group">
@@ -892,8 +890,8 @@
                         <input type="text" placeholder="Enter your Address" class="form-control" name="address" required id="eaddress">
                     </div>
                     <div class="form-group">
-                        <label for="City">LandMark<span class="text-danger">*</span></label>
-                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="elandmark" name="landmark" required>
+                        <label for="City">LandMark</label>
+                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="elandmark" name="landmark">
                     </div>
 
                     <div class="form-group">

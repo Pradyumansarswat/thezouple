@@ -19,9 +19,10 @@ class VerifyCsrfToken extends Middleware
      * @var array
      */
     protected $except = [
-        'https://www.thezouple.com/paytm-callback',
+        'paytm-callback',
+        'https://www.thezouple.in/paytm-callback',
         'https://thezouple.com/paytm-callback',
-        'http://www.thezouple.com/paytm-callback',
+        'http://www.thezouple.in/paytm-callback',
         'http://localhost/thezouple/paytm-callback',
     ];
 }

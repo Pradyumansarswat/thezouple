@@ -133,7 +133,7 @@ if(count($element_show_data)+1 == $current)
 
 
                         <div class="card-body cardDesign p-0 position-relative">
-                            <img src="{{URL::asset('public/upload/shirt/'.$element->image)}}" width="100%">
+                            <img src="{{ z_media_url($element->image, 'shirt') }}" width="100%">
 
                             <div class='form  checkCloth bg-danger' style="border-radius: 30px;">
                                 <input type="radio" name="element" id="{{$element->element_value_id}}" class='checkbox check6' value="{{$element->element_value_id}}" {{$ele_val_id==$element->element_value_id ? "checked" : ""}}>
@@ -152,7 +152,7 @@ if(count($element_show_data)+1 == $current)
             <div class="row">
                 @foreach($size_img as $ims)
                 <div class="col-sm-12">
-                    <img src="{{URL::asset('public/upload/shirt/'.$ims->image)}}" width="100%">
+                    <img src="{{ z_media_url($ims->image, 'shirt') }}" width="100%">
                 </div>
                 @endforeach
             </div>

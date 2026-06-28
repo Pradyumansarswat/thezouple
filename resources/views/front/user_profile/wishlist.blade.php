@@ -123,7 +123,7 @@
                         @foreach($wishs_lists as $wish)
                         <div class="col-12  py-4 col-sm-6 col-md-6 col-lg-4 d-flex">
                             <div class="col-4 p-0">
-                                <img src="{{URL::asset('public/upload/product/'.$wish->product_header_image)}}" alt="IMG" width="100%">
+                                <img src="{{ z_media_url($wish->product_header_image, 'product') }}" alt="IMG" width="100%">
                             </div>
 
                             <div class="col-8 pr-0">
@@ -233,7 +233,7 @@
                     </div>
                     <div class="form-group">
                         <label for="City">LandMark</label>
-                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" required name="landmark">
+                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" name="landmark">
                     </div>
 
                     <div class="row">
@@ -323,7 +323,7 @@
                     </div>
                     <div class="form-group">
                         <label for="City">LandMark</label>
-                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark" required>
+                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark">
                     </div>
 
                     <div class="row">

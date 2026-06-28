@@ -11,7 +11,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -46,13 +46,14 @@
                             <div class="col-sm-12">
                                 <div class="form-group">
                                     <label class="control-label"> Old Password</label>
-                                    <input type="password" value="{{$password->password}}" class="form-control password-field" name="oldpassword" id="oldpassword" placeholder="Old Password" required>
+                                    <input type="password" class="form-control password-field" name="oldpassword" id="oldpassword" placeholder="Old Password" required>
                                 </div>
                             </div>
                             <div class="col-sm-12">
                                 <div class="form-group">
                                     <label class="control-label"> New Password</label>
-                                    <input type="password" class="form-control password-field-full" name="password" id="password" placeholder="New Password" required>
+                                    <input type="password" class="form-control password-field-full" name="password" id="password" data-password-hint="admin_pwd_hint" placeholder="New Password" required>
+                                    <p class="password-static-hint invalid mb-0" id="admin_pwd_hint">Your password must be more than 8 characters long. It should contain atleast 1 Uppercase, 1 Lowercase, 1 Numeric and 1 special character</p>
                                 </div>
                             </div>
                             <div class="col-sm-8">

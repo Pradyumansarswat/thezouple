@@ -2,69 +2,31 @@
 @section('content')
 <main class="app-content">
     <div class="app-title">
-        <div>
-            <h1><i class="fa fa-video-camera"></i> Main Video List</h1>
-        </div>
+        <div><h1><i class="fa fa-video-camera"></i> Main Video</h1></div>
+        <ul class="app-breadcrumb breadcrumb">
+            <a class="btn btn-primary icon-btn" href="{{route('mainVideoUpdate')}}"><i class="fa fa-pencil"></i> Update Main Video</a>
+        </ul>
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
-            <div class="alert alert-danger">
-                <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
-                <ul>
-                    @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-            @endif
-            <div class="flash-message">
-                @foreach (['danger', 'warning', 'success', 'info'] as $msg)
+            @foreach (['danger', 'warning', 'success', 'info'] as $msg)
                 @if(Session::has('alert-' . $msg))
-
-                <p class="alert alert-{{ $msg }}">{{ Session::get('alert-' . $msg) }}
-                    <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
-                </p>
+                    <p class="alert alert-{{ $msg }}">{{ Session::get('alert-' . $msg) }}</p>
                 @endif
-                @endforeach
-            </div>
-            <div class="card-box">
-                <div class="table-rep-plugin">
-                    <div class="table-responsive" data-pattern="priority-columns">
-                        <table id="example" class="table  table-striped table-bordered" cellspacing="0" style="width:100%;">
-                            <thead>
-                                <tr>
-                                    <th>S.No</th>
-                                    <th> Main Video </th>
-                                    <th colspan="1">
-                                        <center>Action</center>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php $i = 1 @endphp
-                                @foreach($video_data as $data)
-                                <tr>
-                                    <td>{{$i}}.</td>
-                                    <td>
-                                        <video width="320" height="240" controls>
-                                            <source src="{{URL::asset('public/upload/video/'.$data->video)}}" type="video/mp4">
-                                        </video>
-
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="{{route('mainVideoUpdate')}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
-                                    </td>
-                                </tr>
-                                @php $i++ @endphp
-                                @endforeach
-                            </tbody>
-                        </table>
+            @endforeach
+            @foreach($video_data as $data)
+                @if(!empty($data->video))
+                    <video width="420" controls>
+                        <source src="{{ z_media_url($data->video, 'video') }}" type="video/mp4">
+                    </video>
+                    <div class="mt-3">
+                        <a href="{{ route('videoDelete', $data->video_id) }}" class="btn btn-danger" onclick="return confirm('Are you sure? This item will move to Recycle Bin.')">Move to Recycle Bin</a>
                     </div>
-                </div>
-            </div>
+                @else
+                    <div class="alert alert-info">No main video uploaded. The frontend video section is hidden.</div>
+                @endif
+            @endforeach
         </div>
     </div>
 </main>
-
 @stop

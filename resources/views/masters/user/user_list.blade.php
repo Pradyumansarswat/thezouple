@@ -11,7 +11,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -80,7 +80,7 @@
                                            <!-- <a href=""><span class="basic_table_icon" style="font-size: 20px;color: red;"><i class="fa fa-reply" aria-hidden="true"></i></span></a>
                                             &nbsp;&nbsp;
                                             -->
-                                            <a href="{{route('user_delete',$data->id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;"><i class="fa fa-trash" aria-hidden="true"></i></span></a>
+                                            <a href="{{route('user_delete',$data->id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;"><i class="fa fa-trash" aria-hidden="true"></i></span></a>
                                             <a href="{{route('userAddress',$data->id)}}"><button class="form-control mt-2 btn-info">Address</button></a>
                                         </td>
                                     </tr>

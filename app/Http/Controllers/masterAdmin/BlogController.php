@@ -11,6 +11,9 @@ use DB;
 
 use App\Helper\BasicHelper;
 use App\Blog;
+use App\Services\AdminRecycleBinService;
+use App\Services\AdminMediaService;
+use Schema;
 
 class BlogController extends Controller
 {
@@ -18,7 +21,7 @@ class BlogController extends Controller
     {
        $page_title = "Blog List - Zouple";
 
-       $data['blog_data'] = DB::table('blog')->orderby('blog_id', 'Desc')->get();
+       $data['blog_data'] = AdminRecycleBinService::activeTable('blog')->orderby('blog_id', 'Desc')->get();
        return view('masters.blog.blog',compact('page_title'), $data);
     }
 
@@ -43,24 +46,20 @@ class BlogController extends Controller
 
       if($request->file('image')!='')
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/blog/');       
-          $request->file('image')->move($destinationPath, $imgname);  
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'blogs', 'blog');
+          $input['image']= $upload['path'];
+          if (Schema::hasColumn('blog', 'image_public_id')) {
+              $input['image_public_id'] = $upload['public_id'];
+          }
       }
         
       if($request->file('front_image')!='')
       {
-          $file=$request->file('front_image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['front_image']= $imgname;       
-          $destinationPath=public_path('upload/blog/');       
-          $request->file('front_image')->move($destinationPath, $imgname);  
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('front_image'), 'blogs', 'blog');
+          $input['front_image']= $upload['path'];
+          if (Schema::hasColumn('blog', 'front_image_public_id')) {
+              $input['front_image_public_id'] = $upload['public_id'];
+          }
       } 
            DB::table('blog')->insert($input);
             $request->session()->flash('alert-success','Blog  has been sucessfully added.');
@@ -69,7 +68,7 @@ class BlogController extends Controller
 
     public function blogUpdatePage(Request $request,$blog_id)
   {
-      $data['blog_datas'] =  DB::table('blog')->where('blog_id','=',$blog_id)->get();
+      $data['blog_datas'] =  AdminRecycleBinService::activeTable('blog')->where('blog_id','=',$blog_id)->get();
       $page_title = "Edit Blog - Zouple";
       return view('masters.blog.edit_blog',compact('page_title'), $data);
   }
@@ -89,16 +88,15 @@ class BlogController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('blog')->where('blog_id','=',$blog_id)->value('image');
-          $fullpath=public_path('upload/blog/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/blog/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $publicId = Schema::hasColumn('blog', 'image_public_id')
+              ? DB::table('blog')->where('blog_id', $blog_id)->value('image_public_id')
+              : null;
+          app(AdminMediaService::class)->deleteMedia($data, 'blog', $publicId, 'image');
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'blogs', 'blog');
+          $input['image']= $upload['path'];
+          if (Schema::hasColumn('blog', 'image_public_id')) {
+              $input['image_public_id'] = $upload['public_id'];
+          }
 
       } 
       else
@@ -109,16 +107,15 @@ class BlogController extends Controller
       if($request->file('front_image')!='')
       {
           $data1=DB::table('blog')->where('blog_id','=',$blog_id)->value('front_image');
-          $fullpath1=public_path('upload/blog/').$data1;
-          File::delete($fullpath1);
-          
-          $file=$request->file('front_image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['front_image']= $imgname;       
-          $destinationPath=public_path('upload/blog/');       
-          $request->file('front_image')->move($destinationPath, $imgname);
+          $publicId = Schema::hasColumn('blog', 'front_image_public_id')
+              ? DB::table('blog')->where('blog_id', $blog_id)->value('front_image_public_id')
+              : null;
+          app(AdminMediaService::class)->deleteMedia($data1, 'blog', $publicId, 'image');
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('front_image'), 'blogs', 'blog');
+          $input['front_image']= $upload['path'];
+          if (Schema::hasColumn('blog', 'front_image_public_id')) {
+              $input['front_image_public_id'] = $upload['public_id'];
+          }
 
       } 
       else
@@ -135,16 +132,8 @@ class BlogController extends Controller
 
     public function blogDeleteFormat(Request $request,$blog_id)
   {
-      $data=DB::table('blog')->where('blog_id','=',$blog_id)->value('image');
-      $fullpath=public_path('upload/blog/').$data;
-      File::delete($fullpath);
-        
-      $data1=DB::table('blog')->where('blog_id','=',$blog_id)->value('front_image');
-      $fullpath1=public_path('upload/blog/').$data1;
-      File::delete($fullpath1);
-        
-      $m = DB::table('blog')->where('blog_id','=',$blog_id)->delete();
-      $request->session()->flash('alert-success','Blog has been sucessfully deleted.');
+      AdminRecycleBinService::softDelete('blogs', $blog_id);
+      $request->session()->flash('alert-success','Blog moved to Recycle Bin.');
       return Redirect::route('blog_page');
   }
 
@@ -174,7 +163,7 @@ class BlogController extends Controller
     
     public function blogSeeMorePage(Request $request,$blog_id)
   {
-      $data['blog_datass'] =  DB::table('blog')->where('blog_id','=',$blog_id)->get();
+      $data['blog_datass'] =  AdminRecycleBinService::activeTable('blog')->where('blog_id','=',$blog_id)->get();
       $page_title = "Blog See More - Zouple";
       return view('masters.blog.see_more_blog',compact('page_title'), $data);
   }

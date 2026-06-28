@@ -175,6 +175,8 @@
 
 </script>
 
+<div class="zouple-commerce-flow zouple-cart-flow">
+
 <!-- Banner Code Start -->
 
 @include('front.layout.banner')
@@ -202,12 +204,12 @@
 
 <!--=========  contnet =========-->
 
-<div class="container">
+<div class="container zouple-cart-page">
     @if(!$cart_data->isEmpty())
-    <div class="row">
+    <div class="row zouple-cart-layout">
         <div class="col-lg-9 pt-4">
 
-            <div class="row  py-1" style="font-size: 16px;">
+            <div class="row py-1 zouple-cart-head">
                 <div class="col-8 ">Items</div>
                 <div class="col-2 d-none d-sm-block  text-right">Unit Price</div>
                 <div class="col-2 d-none d-sm-block  text-right">Net Amount</div>
@@ -215,28 +217,31 @@
 
             <?php $i=0; $stock = 0; $ttl_net_amt=0;?>
             @foreach($cart_data as $data)
+            @php
+                $cartAttributes = $proAttributes[$data->product_id] ?? collect();
+                $cartSelectedAttributes = json_decode($data->attributes_value, true);
+                $cartSelectedAttributes = is_array($cartSelectedAttributes) ? $cartSelectedAttributes : [];
+            @endphp
 
-            <div class="row py-1 my-2 border">
+            <div class="row py-1 my-2 border zouple-cart-item">
                 <div class="col-4 col-sm-2 p-0">
-                    <img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="100%">
+                    <img src="{{ z_media_url($data->product_header_image, 'product') }}" width="100%" class="zouple-cart-image">
                 </div>
-                <div class="col-8 col-sm-6  py-2">
-                    <div class="h6 font-weight-normal m-0">{{$data->product_title}}
+                <div class="col-8 col-sm-6 py-2 zouple-cart-copy">
+                    <div class="h6 font-weight-normal m-0 zouple-cart-title">{{$data->product_title}}
                         <br>
-                        <small class="text-danger">Prices are inclusive all Taxes
+                        <small class="text-danger zouple-cart-note">Prices are inclusive all Taxes
                             <!--of {{$data->product_gst}}% GST--></small>
                     </div>
                     <input type="hidden" id="product_id{{$i}}" value="{{$data->product_id}}">
                     <input type="hidden" id="cart_id{{$i}}" value="{{$data->cart_id}}">
 
-                    <div class=" row " style="font-size:14px; !important" class="text-danger">
-                        @foreach($proAttributes[$data->product_id] as $attValue)
+                    <div class="row zouple-cart-attributes">
+                        @foreach($cartAttributes as $attValue)
                         @if($attValue->attribute_name != "Self")
                         <div class=" py-2 col-12 col-sm-6  col-md-6 text-danger">
                             <?php
-                            
-                            $car_att = json_decode($data->attributes_value);
-                            foreach($car_att as $dt)
+                            foreach($cartSelectedAttributes as $dt)
                             {
                                 echo $dt;
                             }
@@ -246,9 +251,9 @@
                         @endforeach
                     </div>
 
-                    <div class="col-12 col-sm-8 py-2  px-0 d-flex align-self-center priceCart2">
+                    <div class="col-12 col-sm-8 py-2 px-0 d-flex align-self-center priceCart2">
 
-                        <div class="flex-w bo5 of-hidden">
+                        <div class="flex-w bo5 of-hidden zouple-qty-pill">
                             Quantity : <b>{{$data->product_qty}}</b>
                         </div>
 
@@ -267,7 +272,7 @@
                     </div>-->
 
                     <!-- <div class=" row " style="font-size:10px; !important">
-                        @foreach($proAttributes[$data->product_id] as $attValue)
+                        @foreach($cartAttributes as $attValue)
                         @if($attValue->attribute_name != "Self")
                         <div class=" py-2 col-12 col-sm-5  col-md-4">
                             <div class="rs2-select2 rs3-select2 bo4 of-hidden fullsize">
@@ -280,8 +285,7 @@
                                     @foreach($pro_values as $val)
                                     <option value="{{$attValue->attribute_name}}:{{$val}}" <?php
                                             $pro_Att = $attValue->attribute_name.":".$val;
-                                            $car_att = json_decode($data->attributes_value);
-                                            foreach($car_att as $dt)
+                                            foreach($cartSelectedAttributes as $dt)
                                             {
                                                 if($dt == $pro_Att)
                                                 {
@@ -345,18 +349,18 @@
                      $subTotal = $data->product_qty * $netAmount;
                     ?>
 
-                <div class="col-6 col-sm-2  untPrcSm py-2 text-right">
-                    <div class="d-block d-sm-none" style="font-size: 13px;">Unit Price</div>
+                <div class="col-6 col-sm-2 untPrcSm py-2 text-right zouple-cart-price">
+                    <div class="d-block d-sm-none zouple-mobile-label">Unit Price</div>
                     <div> <i class="{{$iicon}} pr-2"></i><span id="price{{$i}}">{{$netAmount}}</span></div>
 
                 </div>
-                <div class="col-6 col-sm-2 untPrcSm  py-2 text-right ">
-                    <div class="d-block d-sm-none" style="font-size: 13px;">Sub- Total</div>
+                <div class="col-6 col-sm-2 untPrcSm py-2 text-right zouple-cart-price">
+                    <div class="d-block d-sm-none zouple-mobile-label">Sub- Total</div>
                     <div class=" font-weight-bold"><i class="{{$iicon}} pr-2"></i><span id="subtotal{{$i}}">{{$subTotal}}</span></div>
                 </div>
                 <div class="col-12 col-sm-12 p-0   remWishbtn">
                     <div class="border-top py-1">
-                        <div class="btn py-0 px-4 mx-3 text-danger" onclick="removecartItem({{$data->cart_id}})">Remove</div>
+                        <div class="btn py-0 px-4 mx-3 text-danger zouple-remove-btn" onclick="removecartItem({{$data->cart_id}})">Remove</div>
                     </div>
                 </div>
 
@@ -371,7 +375,7 @@
             @endforeach
 
 
-            <div class="row justify-content-end border">
+            <div class="row justify-content-end border zouple-cart-total-row">
 
                 <div class="col-6 col-sm-4  untPrcSm py-2 text-right">
 
@@ -385,7 +389,7 @@
 
             </div>
 
-            <div class="row my-2">
+            <div class="row my-2 zouple-cart-actions">
                 <div class="col-12 col-sm-6 my-3">
                     <button type="submit" class="cta border-0" onclick="clearCart()">
                         <span>Clear Cart</span>
@@ -477,13 +481,13 @@
 
         <div class="col-lg-3">
 
-            <div class="border" style="margin-top:4rem; ">
-                <div class="text-center py-4" style="font-size: 13px;">
+            <div class="border zouple-cart-summary">
+                <div class="text-center py-4 zouple-summary-kicker">
                     Item(s): <span class="font-weight-bold">{{$cart_item}}</span>
                 </div>
 
 
-                <div style="font-size:13px;" class="px-3 py-2  border-bottom d-flex justify-content-between">
+                <div class="px-3 py-2 border-bottom d-flex justify-content-between zouple-summary-line">
                     <div class="">Sub Total</div>
                     <div><i class="{{$iicon}} pr-2"></i><span>{{$ttl_net_amt}}</span></div>
                 </div>
@@ -500,7 +504,7 @@
                 ?>
                 
                 @if(isset($discountAmount))
-                <div style="font-size:13px;" class="px-3 py-2  border-bottom d-flex justify-content-between">
+                <div class="px-3 py-2 border-bottom d-flex justify-content-between zouple-summary-line">
                     <div class="">Discount({{$discountCouponFetchData}}%)</div>
                     <div><i class="{{$iicon}} pr-2"></i><span>{{$discountAmount}}</span></div>
                 </div>
@@ -519,17 +523,17 @@
                     </span></div>
                 </div>-->
 
-                <div style="font-size:13px;" class="px-3 py-2  border-bottom d-flex justify-content-between">
+                <div class="px-3 py-2 border-bottom d-flex justify-content-between zouple-summary-line">
                     <div class="">Shipping Charge</div>
                     <div><i class="{{$iicon}} pr-2"></i><span>{{$total_shipping}}</span></div>
                 </div>
 
-                <div class="h6 px-3 py-3  d-flex justify-content-between">
+                <div class="h6 px-3 py-3 d-flex justify-content-between zouple-summary-total">
                     <div class="">TOTAL PAYABLE</div>
                     <div><i class="{{$iicon}} pr-2"></i><span>{{$total_final_amount}}</span></div>
                 </div>
             </div>
-            <div class=" my-4">
+            <div class="my-4 zouple-checkout-cta">
                 @if(isset(Auth::user()->id))
                 @if($stock > 0)
                 <!-- Button -->
@@ -572,7 +576,8 @@
     </div>
     @else
     <div class="row">
-        <div class="col-sm-12 h4 pt-4 pb-5 text-center my-5 h6 text-danger">
+        <div class="col-sm-12 h4 pt-4 pb-5 text-center my-5 h6 text-danger zouple-empty-cart">
+            <i class="fa fa-shopping-bag d-block mb-3"></i>
             Oops !! Currently there is no item in your cart.
         </div>
     </div>
@@ -580,6 +585,7 @@
 
 </div>
 </section>
+</div>
 
 
 

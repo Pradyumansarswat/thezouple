@@ -24,7 +24,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -64,7 +64,7 @@
                                     <label class="control-label"> Image <span class="text-danger">(Image Dimensions - 565*407 Pixel)</span></label>
                                     <input class="form-control" type="file" name="image" accept="image/x-png,image/gif,image/jpeg">
                                 </div>
-                                <img src="{{URL::asset('public/upload/customershirt/'.$data->image)}}" width="130px">
+                                <img src="{{ z_media_url($data->image, 'customershirt') }}" width="130px">
                             </div>
                             
                             

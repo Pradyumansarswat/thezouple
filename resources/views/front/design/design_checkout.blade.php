@@ -533,7 +533,7 @@
                                             <th scope="row">1</th>
                                             <td class="align-self-center">Febric</td>
                                             <td>
-                                                <img src="{{URL::asset('public/upload/shirt/'.$febricImage[$dt])}}" width="100%" style="max-height: 100px; width:auto;">
+                                                <img src="{{ z_media_url($febricImage[$dt], 'shirt') }}" width="100%" style="max-height: 100px; width:auto;">
                                                 <br>
                                                 <b>{{$febricName[$dt]}}</b>
                                             </td>
@@ -545,7 +545,7 @@
                                             <td class="align-self-center">{{$key}}</td>
                                             <td>
 
-                                                <img src="{{URL::asset('public/upload/shirt/'.$elementValueImage[$dt])}}" width="100%" style="max-height: 100px; width:auto;">
+                                                <img src="{{ z_media_url($elementValueImage[$dt], 'shirt') }}" width="100%" style="max-height: 100px; width:auto;">
                                                 <br>
                                                 <b>{{$elementValueName[$dt]}}</b>
                                             </td>
@@ -701,8 +701,8 @@
                             <input type="text" placeholder="Enter your Address" class="form-control" id="Adress" name="address" required>
                         </div>
                         <div class="form-group">
-                            <label for="City">LandMark<span class="text-danger">*</span></label>
-                            <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark" required>
+                            <label for="City">LandMark</label>
+                            <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark">
                         </div>
 
                         <div class="form-group">
@@ -792,8 +792,8 @@
                             <input type="text" placeholder="Enter your Address" class="form-control" name="address" required id="eaddress">
                         </div>
                         <div class="form-group">
-                            <label for="City">LandMark<span class="text-danger">*</span></label>
-                            <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="elandmark" name="landmark" required>
+                            <label for="City">LandMark</label>
+                            <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="elandmark" name="landmark">
                         </div>
 
                         <div class="form-group">

@@ -8,6 +8,9 @@ use App\Http\Controllers\Controller;
 use Auth,Redirect,View,File,Config,Image,Session;
 use Validator;
 use DB;
+use App\Services\AdminRecycleBinService;
+use App\Services\AdminMediaService;
+use Schema;
 
 class BannerController extends Controller
 {
@@ -15,13 +18,13 @@ class BannerController extends Controller
     {
        $page_title = "Banner List - Zouple";
 
-       $data['banner_data'] = DB::table('banner')->orderby('banner_id', 'Desc')->get();
+       $data['banner_data'] = AdminRecycleBinService::activeTable('banner')->orderby('banner_id', 'Desc')->get();
        return view('masters.banner.banner',compact('page_title'), $data);
     }
     
     public function bannerUpdate(Request $request,$banner_id)
   {
-      $data['banner_datas'] =  DB::table('banner')->where('banner_id', 1)->get();
+      $data['banner_datas'] =  AdminRecycleBinService::activeTable('banner')->where('banner_id', 1)->get();
       $page_title = "Edit Banner - Zouple";
       return view('masters.banner.edit_banner',compact('page_title'), $data);
   }
@@ -35,16 +38,10 @@ class BannerController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('banner')->where('banner_id', 1)->value('image');
-          $fullpath=public_path('upload/banner/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/banner/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteSingleImage('banner', 'banner_id', 1, 'banner', $data);
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'banners', 'banner');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'banner', $upload['public_id']);
 
       } 
       else
@@ -86,16 +83,10 @@ class BannerController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('flash_banner')->where('flash_banner_id', 1)->value('image');
-          $fullpath=public_path('upload/flashbanner/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/flashbanner/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteSingleImage('flash_banner', 'flash_banner_id', 1, 'flashbanner', $data);
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'flash-banners', 'flashbanner');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'flash_banner', $upload['public_id']);
 
       } 
       else
@@ -136,16 +127,10 @@ class BannerController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('login_banner')->where('login_banner_id', $login_banner_id)->value('image');
-          $fullpath=public_path('upload/loginbanner/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/loginbanner/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteSingleImage('login_banner', 'login_banner_id', $login_banner_id, 'loginbanner', $data);
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'login-banners', 'loginbanner');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'login_banner', $upload['public_id']);
 
       } 
       else
@@ -167,16 +152,17 @@ class BannerController extends Controller
         public function getNotificationList(Request $request)
         {
            $page_title = "Get Notification List - Zouple";
-           $data['noti_data'] = DB::table('getnotification')
+           $data['noti_data'] = AdminRecycleBinService::activeTable('getnotification')
            ->join('products', 'products.product_id', '=', 'getnotification.product_id')
+           ->whereNull('products.deleted_at')
            ->orderby('getnotification.notifi_id', 'Desc')->get();
            return view('masters.getnotification.getnotification',compact('page_title'), $data);
         }
         
         public function getNotificationDeleteFormat(Request $request, $notifi_id)
         {
-            DB::table('getnotification')->where('notifi_id', $notifi_id)->delete(); 
-            $request->session()->flash('alert-success','Get Notification has been sucessfully Deleted.');
+            AdminRecycleBinService::softDelete('notifications', $notifi_id);
+            $request->session()->flash('alert-success','Notification moved to Recycle Bin.');
             return Redirect::route('getNotification');
         }
         
@@ -210,16 +196,10 @@ class BannerController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('customer_shirt')->where('customer_shirt_id', $customer_shirt_id)->value('image');
-          $fullpath=public_path('upload/customershirt/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/customershirt/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteSingleImage('customer_shirt', 'customer_shirt_id', $customer_shirt_id, 'customershirt', $data);
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'customer-shirts', 'customershirt');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'customer_shirt', $upload['public_id']);
 
       } 
       else
@@ -232,6 +212,22 @@ class BannerController extends Controller
         return Redirect::route('customerShirt');
     
 
+    }
+
+    private function setPublicId(array &$input, $table, $publicId)
+    {
+        if (Schema::hasColumn($table, 'image_public_id')) {
+            $input['image_public_id'] = $publicId;
+        }
+    }
+
+    private function deleteSingleImage($table, $keyColumn, $keyValue, $localFolder, $image)
+    {
+        $publicId = Schema::hasColumn($table, 'image_public_id')
+            ? DB::table($table)->where($keyColumn, $keyValue)->value('image_public_id')
+            : null;
+
+        app(AdminMediaService::class)->deleteMedia($image, $localFolder, $publicId, 'image');
     }
 
     

@@ -12,33 +12,22 @@ use Auth,Redirect,View,File,Config,Image;
 use Validator;
 use DB;
 use App\Product;
-use App\Accessories;
+
 use App\ProductQty;
 use Session;
 use Mail;
 use App\Helper\BasicHelper;
+use Illuminate\Support\Facades\Schema;
+use App\Services\AdminRecycleBinService;
 
 
 class HomeController extends Controller
 {
    
-   public function __construct(Request $request)
+   public function __construct()
     {
-       /* Location */
-         $ips = $request->ip();
-        //$ips = "207.244.89.90";
-       // $ips = "103.73.34.128";
-       return $ips;
-        $dataLocation = \Location::get($ips);
-        foreach($dataLocation as $dt)
-        {
-            $arrLoc[] =  $dt;
-        }
-        $cun_code = $arrLoc[2];
-        $amtType =  DB::table('currency')->where('currency_code',$cun_code)->value('currency');
-      
-        Session::put('currency',$amtType);
-        Session::save();
+        // Constructor is intentionally left clean.
+        // Currency detection is handled per-request in middleware.
     }
     public function index(Request $request)
     {
@@ -51,15 +40,19 @@ class HomeController extends Controller
         
        $data['cate_data'] = Category::where('is_show',"SHOW")->get();
         
-       $data['blog_data'] = DB::table('blog')->orderby('blog_id', 'desc')->limit(2)->get();
+       $siteInfo = DB::table('siteinfos')->where('siteinfo_id', 1)->first();
+       $whatsappNumber = $siteInfo && !empty($siteInfo->whatsapp_number) ? $siteInfo->whatsapp_number : ($siteInfo->phone_number ?? '');
+       $data['bulk_whatsapp_link'] = 'https://wa.me/' . preg_replace('/\D+/', '', $whatsappNumber) . '?text=' . rawurlencode('Hello Zouple, I want to enquire about bulk order.');
+       $data['blog_data'] = collect([]);
         
-       $data['main_video'] = DB::table('video')->get();
+       $videoQuery = AdminRecycleBinService::activeTable('video');
+       $data['main_video'] = $videoQuery->get();
         
        
 
-       $data['slider_data'] = DB::table('sliders')->where('is_active', 'ACTIVE')->get();
+       $data['slider_data'] = AdminRecycleBinService::activeTable('sliders')->where('is_active', 'ACTIVE')->get();
         
-       $data['banner_data'] = DB::table('offerbanners')->orderby('offerbanners_id', 'asc')->get();
+       $data['banner_data'] = AdminRecycleBinService::activeTable('offerbanners')->orderby('offerbanners_id', 'asc')->get();
         
       $data['featured_products'] = Product::leftJoin('product_quantity', function ($join) {
                 $join->on('product_quantity.product_quantity_id', '=', DB::raw('(SELECT product_quantity_id FROM product_quantity WHERE product_quantity.product_id = products.product_id LIMIT 1)'));})
@@ -79,6 +72,7 @@ class HomeController extends Controller
         
         $data['view_flash_data'] = DB::table('flash_sale')
             ->join('products', 'products.product_id', '=', 'flash_sale.product_id')
+            ->whereNull('products.deleted_at')
             ->where('flash_sale.flash_active', 'ACTIVE')
             ->get();
         
@@ -145,13 +139,25 @@ class HomeController extends Controller
         $data['flash_sales_data'] = DB::table('flash_banner')->where('flash_banner_id', 1)->orderby('flash_banner_id', 'asc')->get();
         
         $data['customer_data'] = DB::table('customer_shirt')->where('customer_shirt_id', 1)->get();
-        $data['testimonials'] = DB::table('testimonial')->get();
+        $testimonialQuery = AdminRecycleBinService::activeTable('testimonial')->orderBy('testimonial_id', 'desc');
+        $data['testimonials'] = $testimonialQuery->take(12)->get();
         
         
             return view('front.index',compact('is_flash','count_down','amt'), $data);
         } catch (\Exception $e) {
-            // Database unavailable, return simple view with default values
-            $data = [];
+            // Database unavailable or error — return safe defaults for all view variables
+            $data['main_video']       = collect([]);
+            $data['slider_data']      = collect([]);
+            $data['cate_data']        = collect([]);
+            $data['blog_data']        = collect([]);
+            $data['banner_data']      = collect([]);
+            $data['featured_products']= collect([]);
+            $data['new_arrivals']     = collect([]);
+            $data['view_flash_data']  = collect([]);
+            $data['flashSalesData']   = collect([]);
+            $data['flash_sales_data'] = collect([]);
+            $data['customer_data']    = collect([]);
+            $data['testimonials']     = collect([]);
             $is_flash = "INACTIVE";
             $count_down = date('M d, Y 00:00:00');
             $amt = 0;
@@ -191,11 +197,13 @@ class HomeController extends Controller
      public function cmspages(Request $request, $slug)
     {
        
-        $data['cms_data'] = DB::table('cms')->where('slug',$slug)->get();
+        $cmsQuery = AdminRecycleBinService::activeTable('cms')->where('slug',$slug);
+        $data['cms_data'] = $cmsQuery->get();
 
-            $meta_description = DB::table('cms')->where('slug',$slug)->value('meta_description');
-            $meta_keyword = DB::table('cms')->where('slug',$slug)->value('meta_keywords');
-            $page_title = DB::table('cms')->where('slug',$slug)->value('meta_title');
+            $cmsMeta = AdminRecycleBinService::activeTable('cms')->where('slug',$slug)->first();
+            $meta_description = $cmsMeta ? $cmsMeta->meta_description : '';
+            $meta_keyword = $cmsMeta ? $cmsMeta->meta_keywords : '';
+            $page_title = $cmsMeta ? $cmsMeta->meta_title : 'Zouple';
        
        
         return view('front.cms.cmspage',compact('page_title', 'meta_description', 'meta_keyword'),$data);
@@ -204,10 +212,12 @@ class HomeController extends Controller
     public function cmspagesss(Request $request, $slug)
     {
        
-        $data['cms_data'] = DB::table('cms')->where('slug',$slug)->get();
-        $meta_description = DB::table('cms')->where('slug',$slug)->value('meta_description');
-        $meta_keyword = DB::table('cms')->where('slug',$slug)->value('meta_keywords');
-        $page_title = DB::table('cms')->where('slug',$slug)->value('meta_title');
+        $cmsQuery = AdminRecycleBinService::activeTable('cms')->where('slug',$slug);
+        $data['cms_data'] = $cmsQuery->get();
+        $cmsMeta = AdminRecycleBinService::activeTable('cms')->where('slug',$slug)->first();
+        $meta_description = $cmsMeta ? $cmsMeta->meta_description : '';
+        $meta_keyword = $cmsMeta ? $cmsMeta->meta_keywords : '';
+        $page_title = $cmsMeta ? $cmsMeta->meta_title : 'Zouple';
         
         return view('front.cms.cmspagess',compact('page_title', 'meta_description', 'meta_keyword'),$data);
     }

@@ -62,7 +62,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -115,13 +115,15 @@
                                         <td><input type="checkbox" name="product_id[]" value="{{$data->product_id}},"></td>
                                         <td>{{$i}}.</td>
                                         <td>
-                                        <?php
-                                         $catArray = json_decode($data->category);   
-                                        foreach($catArray as $kj)
-                                        {
-                                            echo $cateName[$kj].",<br>";
-                                        }
-                                        ?>
+                                        @php
+                                            $catArray = json_decode($data->category, true);
+                                            $catArray = is_array($catArray) ? $catArray : [];
+                                        @endphp
+                                        @forelse($catArray as $kj)
+                                            {{ $cateName[$kj] ?? 'Category missing' }}<br>
+                                        @empty
+                                            <span class="text-muted">No category</span>
+                                        @endforelse
                                            
                                         </td>
                                         <td><a href="{{route('productshowdetail',$pro_id)}}">{{$data->product_sku}}</a></td>
@@ -130,7 +132,17 @@
                                         <td><a href="{{route('productshowdetail',$data->product_id)}}">{{$data->product_title}}</a></td>
                                         <td>{{$data->product_gst}}</td>
                                         
-                                        <td><img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="130px"></td>
+                                        @php
+                                            $productHeaderImage = trim((string) $data->product_header_image);
+                                            $hasProductHeaderImage = z_media_exists($productHeaderImage, 'product');
+                                        @endphp
+                                        <td>
+                                            @if($hasProductHeaderImage)
+                                                <img src="{{ z_media_url($productHeaderImage, 'product') }}" class="admin-product-thumb" alt="{{ $data->product_title }}">
+                                            @else
+                                                <div class="admin-product-placeholder">{{ strtoupper(substr(trim($data->product_title ?: 'P'), 0, 1)) }}</div>
+                                            @endif
+                                        </td>
                                         
                                         <td class="text-center">
                                             <b>INR : {{$data->rupee_net_with_gst}}<br>
@@ -169,7 +181,7 @@
                                        
                                         <td class="text-center">
                                             <a href="{{route('productUpdate',$data->product_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
-                                            <a href="{{route('productDelete',$data->product_id)}}" onClick="return confirm('Are you sure,you want to delete this Product?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
+                                            <a href="{{route('productDelete',$data->product_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                             
                                             <a class="btn btn-primary icon-btn" href="{{route('product_quantity_update',$data->product_id)}}"><i class="fa fa-plus"></i> Update Quantity</a> 
                                             

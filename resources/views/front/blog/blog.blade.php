@@ -33,7 +33,7 @@
 
             <div class="col-12 p-0 col-md-4 border">
 
-                <img src="{{URL::asset('public/upload/blog/'.$blog->image)}}" width="100%">
+                <img src="{{ z_media_url($blog->image, 'blog') }}" width="100%">
             </div>
 
             <div class="card  border-0 col-12 col-md-8 p-0">

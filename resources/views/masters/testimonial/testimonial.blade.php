@@ -11,7 +11,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -50,9 +50,21 @@
                             <tbody>
                                 @php $i = 1 @endphp
                                 @foreach($testimonial_data as $data)
+                                @php
+                                    $testimonialImage = trim((string) $data->image);
+                                    $hasTestimonialImage = z_media_exists($testimonialImage, 'testimonial');
+                                @endphp
                                 <tr>
                                     <td>{{$i}}.</td>
-                                    <td><img src="{{URL::asset('public/upload/testimonial/'.$data->image)}}" width="300px"></td>
+                                    <td>
+                                        @if($hasTestimonialImage)
+                                            <img src="{{ z_media_url($testimonialImage, 'testimonial') }}" class="admin-testimonial-thumb" alt="{{ $data->name }}">
+                                        @else
+                                            <div class="admin-testimonial-placeholder">
+                                                {{ strtoupper(substr(trim($data->name ?: 'Z'), 0, 1)) }}
+                                            </div>
+                                        @endif
+                                    </td>
                                     <td>{{$data->name}}</td>
                                     <td>{{$data->heading}}</td>
                                     <td><?php echo $data->description; ?></td>
@@ -60,7 +72,7 @@
                                     
                                     <td class="text-center">
                                         <a href="{{route('testimonialUpdate',$data->testimonial_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
-                                        <a href="{{route('testimonialDelete',$data->testimonial_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
+                                        <a href="{{route('testimonialDelete',$data->testimonial_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                     </td>
                                 </tr>
                                 @php $i++ @endphp

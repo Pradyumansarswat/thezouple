@@ -10,7 +10,6 @@
 <body>
 <center><h1>Please do not refresh this page...</h1></center>
 <form method="post" action="{{ $paytm_txn_url }}" name="f1">
-    {{ csrf_field()  }}
     <table border="1">
         <tbody>
 		<?php

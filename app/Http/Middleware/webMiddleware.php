@@ -81,13 +81,26 @@ class webMiddleware
         $wish_item = 0;
         if(isset(Auth::user()->id))
         {   
-            $mywishList = DB::table('wishlists')->where('user_id',Auth::user()->id)->pluck('product_id')->toArray();
-             $cart_item = DB::table('carts')->where('ip_address',$ip)->orWhere ('user_id', Auth::user()->id)->count('cart_id');
-            $wish_item = DB::table('wishlists')->where('user_id',Auth::user()->id)->count('wishlist_id');
+            $userId = Auth::user()->id;
+            $mywishList = DB::table('wishlists')->where('user_id', $userId)->pluck('product_id')->toArray();
+            $cart_item = DB::table('carts')
+                ->where(function ($query) use ($ip, $userId) {
+                    $query->where('user_id', $userId)
+                        ->orWhere(function ($guestQuery) use ($ip) {
+                            $guestQuery->where('ip_address', $ip)
+                                ->where(function ($emptyUserQuery) {
+                                    $emptyUserQuery->whereNull('user_id')
+                                        ->orWhere('user_id', 0)
+                                        ->orWhere('user_id', '');
+                                });
+                        });
+                })
+                ->count('cart_id');
+            $wish_item = DB::table('wishlists')->where('user_id', $userId)->count('wishlist_id');
             
              $wishList = DB::table('wishlists')
                             ->join('products','products.product_id','wishlists.product_id')
-                            ->where('user_id',Auth::user()->id)->get();
+                            ->where('user_id', $userId)->get();
             
             
             View::share('mywishList', $mywishList);
@@ -98,7 +111,14 @@ class webMiddleware
         else
         {
              View::share('wish_item', $wish_item);
-            $cart_item = DB::table('carts')->where('ip_address',$ip)->count('cart_id');
+            $cart_item = DB::table('carts')
+                ->where('ip_address',$ip)
+                ->where(function ($query) {
+                    $query->whereNull('user_id')
+                        ->orWhere('user_id', 0)
+                        ->orWhere('user_id', '');
+                })
+                ->count('cart_id');
             View::share('cart_item', $cart_item);
         }
 

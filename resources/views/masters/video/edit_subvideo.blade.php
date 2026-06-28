@@ -13,7 +13,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -36,20 +36,33 @@
             <div class="card-box">
                 <form action="{{route('subvideoUpdateSave')}}" method="post" enctype="multipart/form-data">
                     @csrf
+                    <div class="alert alert-danger d-none js-video-upload-error"></div>
                     @foreach($videos_data as $data)
                     <div class="row col-sm-12">
                         <div class="col-sm-6">
                             <div class="form-group">
-                                <video width="320" height="240" controls>
-                                    <source src="{{URL::asset('public/upload/video/'.$data->video)}}" type="video/mp4">
-                                </video>
+                                @if(!empty($data->video))
+                                    <video width="320" height="240" controls>
+                                        <source src="{{ z_media_url($data->video, 'video') }}" type="video/mp4">
+                                    </video>
+                                @else
+                                    <div class="alert alert-info">No sub video uploaded.</div>
+                                @endif
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="form-group">
-                                <label class="control-label"> Main Video </label>
-                                <input class="form-control" type="file" name="video" >
+                                <label class="control-label"> Sub Video </label>
+                                <input class="form-control js-video-upload-input" type="file" name="video" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/webm" data-max-size-mb="100">
+                                <small class="form-text text-muted">Upload MP4, MOV, AVI, WMV, or WebM up to 100 MB.</small>
                             </div>
+                            @if(!empty($data->video))
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="remove_video" value="1"> Remove current video from frontend
+                                </label>
+                            </div>
+                            @endif
                         </div>
 
                         <div class="col-sm-6">

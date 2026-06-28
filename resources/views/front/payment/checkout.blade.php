@@ -9,6 +9,37 @@
         display: block;
     }
 
+    .payment-methods {
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 14px;
+        background: #fff;
+        margin-top: 16px;
+    }
+    .payment-method-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 8px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        margin: 0;
+    }
+    .payment-method-option:last-child {
+        border-bottom: 0;
+    }
+    .payment-method-option input {
+        margin: 0;
+    }
+    .payment-method-copy {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.25;
+    }
+    .payment-method-copy small {
+        color: #777;
+    }
+
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 
@@ -377,6 +408,7 @@
 
 <!--===============  section =====================-->
 
+<div class="zouple-commerce-flow zouple-checkout-flow">
 <section class="pb-5">
     <!-- Banner Code Start -->
 
@@ -406,9 +438,9 @@
 
 
 
-    <div class="container">
+    <div class="container zouple-checkout-page">
 
-        <div class="d-flex align-self-center justify-content-between stepsPayment text-right  my-2  py-2">
+        <div class="d-flex align-self-center justify-content-between stepsPayment text-right my-2 py-2 zouple-checkout-steps">
             <div class="d-flex align-self-center">
                 <div class="color0-hov text-dark align-self-center " id="prevBtn" onclick="nextPrev(-1)"><i class="fa fa-angle-double-left px-2" aria-hidden="true"></i> Previous</div>
             </div>
@@ -428,30 +460,30 @@
     </div>
     <hr>
 
-    <div class="container pb-5">
-        <div class="row shadow py-4 border-top">
+    <div class="container pb-5 zouple-checkout-shell">
+        <div class="row shadow py-4 border-top zouple-checkout-panel">
 
             <form id="regForm" action="{{url('paymentNow')}}" class="w-100" method="post">
                 @csrf
                 <div class="tab">
 
-                    <div class="container cartHeading">
+                    <div class="container cartHeading zouple-address-step">
                         <div class="row w-100">
                             <div class="col-12 col-sm-12 col-md-6 ">
                                <!-- <div class="h5 m-0 py-3 text-center m-auto">
                                     Shipping Address
                                 </div>-->
                                 
-                                    <div style="margin:0px;">
+                                    <div class="zouple-section-kicker">
                                       <b>Please enter shipping / billing address.</b>
                                     </div>
                                     
                                 
-                                <div onclick="changeaddresstype('Shipping')" class="h6 text-left mt-1 text-danger btnFormHover" data-toggle="modal" data-target="#shipping">
+                                <div onclick="changeaddresstype('Shipping')" class="h6 text-left mt-1 text-danger btnFormHover zouple-add-address" data-toggle="modal" data-target="#shipping">
                                     + Add Shipping Address
                                 </div>
                                 @foreach($buynow_shipping_list as $data)
-                                <div class="border px-4 my-3">
+                                <div class="border px-4 my-3 zouple-address-card">
                                     <div class="text-center  py-2">
                                         <input type="hidden" name="shippingAddress" value="{{$data->user_information_id}}" id="shippingAddress">
                                         <input type="hidden" name="shippin" value="{{$data->pin}}" id="shippin">
@@ -473,13 +505,13 @@
                                             <div>+91 <span id="mobile">{{$data->mobile}}</span></div>
                                         </div>
                                     </div>
-                                    <div onclick="echangeaddresstype('Shipping Address')" class="text-right h6 btnFormHover" data-toggle="modal" data-target="#Editing">
+                                    <div onclick="echangeaddresstype('Shipping Address')" class="text-right h6 btnFormHover zouple-address-edit" data-toggle="modal" data-target="#Editing">
 
                                         <a href="#" onclick="edit_payment('{{$data->address_name}}',{{$data->mobile}},'{{$data->address}}','{{$data->landmark}}','{{$data->country}}','{{$data->state}}','{{$data->city_name}}',{{$data->pin}},{{$data->user_information_id}},'{{$data->addresstype}}')">Edit</a>
 
 
                                     </div>
-                                    <div class="h6">Or choose from below Addresses</div>
+                                    <div class="h6 zouple-select-label">Or choose from below Addresses</div>
                                     <div class="form-group">
                                         <select class="form-control" onchange="changeshipping(this.value)">
                                             <option value="">---- Choose Other ----</option>
@@ -498,13 +530,13 @@
                                     Billing Address
                                 </div>-->
                                  <div class="row justify-content-end">
-                                    <div class="text-right h6 col-12 col-sm-12 btnFormHover" style="margin:0px;">
-                                        <input type="checkbox" id="checksame" name="checksame"><label for="checksame"c>&nbsp; My billing address is same as shipping address</label>
+                                    <div class="text-right h6 col-12 col-sm-12 btnFormHover zouple-same-address">
+                                        <input type="checkbox" id="checksame" name="checksame"><label for="checksame">&nbsp; My billing address is same as shipping address</label>
                                     </div>
                                        </div>
                                 <div class="row justify-content-end">
                                     
-                                    <div onclick="changeaddresstype('Billing')" class="h6 col-12 col-sm-5  btnFormHover text-right text-danger" data-toggle="modal" data-target="#shipping">
+                                    <div onclick="changeaddresstype('Billing')" class="h6 col-12 col-sm-5 btnFormHover text-right text-danger zouple-add-address" data-toggle="modal" data-target="#shipping">
                                         + Add Billing Address
                                     </div>
                                 </div>
@@ -513,13 +545,13 @@
                                     
                              
                                 
-                                <div class="border px-4 mb-3 mt-2  displaynon" id="sameaddresspopup">
+                                <div class="border px-4 mb-3 mt-2 displaynon zouple-address-card zouple-same-address-note" id="sameaddresspopup">
                                     <div class="text-center py-2">
                                         You have selected shipping and billing address as same.
                                     </div>
                                 </div>
                                 @foreach($buynow_billing_list as $data)
-                                <div class="border px-4 mb-3 mt-2">
+                                <div class="border px-4 mb-3 mt-2 zouple-address-card">
                                     <div class="text-center py-2">
                                         <label for="BillAdd_1" class="align-seld-center ">
                                             <div class="h5 m-0 pl-3" id="saddress_name">{{$data->address_name}}</div>
@@ -538,12 +570,12 @@
                                             <div>+91 <span id="smobile">{{$data->mobile}}</span></div>
                                         </div>
                                     </div>
-                                    <div onclick="echangeaddresstype('Billing Address')" class="text-right h6  btnFormHover" data-toggle="modal" data-target="#Editing">
+                                    <div onclick="echangeaddresstype('Billing Address')" class="text-right h6 btnFormHover zouple-address-edit" data-toggle="modal" data-target="#Editing">
 
                                         <a href="#" onclick="edit_payment('{{$data->address_name}}',{{$data->mobile}},'{{$data->address}}','{{$data->landmark}}','{{$data->country}}','{{$data->state}}','{{$data->city_name}}',{{$data->pin}},{{$data->user_information_id}},'{{$data->addresstype}}')">Edit</a>
 
                                     </div>
-                                    <div class="h6">Or choose from below Addresses</div>
+                                    <div class="h6 zouple-select-label">Or choose from below Addresses</div>
                                     <div class="form-group">
                                         <select class="form-control" name="droBillingAdress" onchange="changeBilling(this.value)">
                                             <option value="">---- Choose Other ----</option>
@@ -558,7 +590,7 @@
 
 
                         </div>
-                        <div class="px-4" style="float: right" id="btnContinue">
+                        <div class="px-4 zouple-step-action" id="btnContinue">
                             @if(!$buynow_shipping_list->isEmpty() && !$buynow_billing_list->isEmpty())
                             <button type="button" class="cta border-0" onclick="nextPrev(1)">
                                 <span style="z-index: 9;">Continue</span>
@@ -582,27 +614,27 @@
                     </div>
                 </div>
                 <div class="tab">
-                    <div class="container">
+                    <div class="container zouple-review-step">
                         <div class="row">
                             <div class="col-lg-9">
 
-                                <div class="row  py-1" style="font-size: 16px;">
+                                <div class="row py-1 zouple-cart-head">
                                     <div class="col-8 ">Items</div>
                                     <div class="col-2 d-none d-sm-block  text-right">Unit Price</div>
                                     <div class="col-2 d-none d-sm-block  text-right">Net Amount</div>
                                 </div>
                                 <?php $ttl_net_amt = 0;?>
                                 @foreach($cart_data as $data)
-                                <div class="row py-1 my-2 border">
+                                <div class="row py-1 my-2 border zouple-cart-item zouple-checkout-item">
                                     <div class="col-4 col-sm-2 p-0">
-                                        <img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="100%">
+                                        <img src="{{ z_media_url($data->product_header_image, 'product') }}" width="100%" class="zouple-cart-image">
                                     </div>
-                                    <div class="col-8 col-sm-6  py-2">
-                                        <div class="h6 font-weight-normal m-0">{{$data->product_title}}
+                                    <div class="col-8 col-sm-6 py-2 zouple-cart-copy">
+                                        <div class="h6 font-weight-normal m-0 zouple-cart-title">{{$data->product_title}}
                                         <br>
-                                        <small class="text-danger">Prices are inclusive all taxes.<!--of {{$data->product_gst}}% GST--></small>
+                                        <small class="text-danger zouple-cart-note">Prices are inclusive all taxes.<!--of {{$data->product_gst}}% GST--></small>
                                         </div>
-                                        <div class=" row " style="font-size:14px; !important" class="text-danger">
+                                        <div class="row zouple-cart-attributes">
                                             @foreach($proAttributes[$data->product_id] as $attValue)
                                             @if($attValue->attribute_name != "Self")
                                             <div class=" py-2 col-12 col-sm-6  col-md-6 text-danger">
@@ -621,7 +653,7 @@
 
                                         <div class="col-12 col-sm-8 py-2  px-0 d-flex align-self-center priceCart2">
 
-                                            <div class="flex-w bo5 of-hidden">
+                                            <div class="flex-w bo5 of-hidden zouple-qty-pill">
                                                 Quantity : <b>{{$data->product_qty}}</b>
                                             </div>
                                         </div>
@@ -653,13 +685,13 @@
 
                                      $subTotal = $data->product_qty * $netAmount;
                                     ?>
-                                    <div class="col-6 col-sm-2  untPrcSm py-2 text-right">
-                                        <div class="d-block d-sm-none" style="font-size: 13px;">Unit Price</div>
+                                    <div class="col-6 col-sm-2 untPrcSm py-2 text-right zouple-cart-price">
+                                        <div class="d-block d-sm-none zouple-mobile-label">Unit Price</div>
                                         <div> <i class="{{$iicon}} pr-2"></i><span>{{$netAmount}}</span></div>
                                         
                                     </div>
-                                    <div class="col-6 col-sm-2 untPrcSm  py-2 text-right ">
-                                        <div class="d-block d-sm-none" style="font-size: 13px;">Net Amount</div>
+                                    <div class="col-6 col-sm-2 untPrcSm py-2 text-right zouple-cart-price">
+                                        <div class="d-block d-sm-none zouple-mobile-label">Net Amount</div>
                                         <div class=" font-weight-bold"><i class="{{$iicon}} pr-2"></i><span>{{$subTotal}}</span></div>
                                     </div>
                                     <?php  $ttl_net_amt = $netAmount * $data->product_qty + $ttl_net_amt;
@@ -670,10 +702,10 @@
 
 
 
-                                <div class="row">
+                                <div class="row zouple-address-preview-grid">
                                     <div class="col-12 col-sm-12 col-md-6">
-                                        <div class="border p-3">
-                                            <div class="h6 text-center">Shipping Address</div>
+                                        <div class="border p-3 zouple-address-preview">
+                                            <div class="h6 text-center zouple-preview-title">Shipping Address</div>
                                             @foreach($buynow_shipping_list as $data)
                                             <div class="h6" id="faddress_name">{{$data->address_name}}</div>
                                             <div id="faddress">
@@ -696,9 +728,9 @@
                                         </div>
                                     </div>
                                     <div class="col-12 col-sm-12 col-md-6">
-                                        <div class="border p-3">
-                                            <div class="h6 text-center">Billing Address</div>
-                                            <div class="border px-4 mb-3 mt-2  displaynon" id="sameaddresspopup1">
+                                        <div class="border p-3 zouple-address-preview">
+                                            <div class="h6 text-center zouple-preview-title">Billing Address</div>
+                                            <div class="border px-4 mb-3 mt-2 displaynon zouple-same-address-note" id="sameaddresspopup1">
                                                 <div class="text-center py-2">
                                                     You have selected shipping and billing address as same
                                                 </div>
@@ -819,9 +851,9 @@
 
                             <div class="col-lg-3">
 
-                                <div class="border" style="margin-top:2.5rem; ">
+                                <div class="border zouple-cart-summary zouple-checkout-summary">
                                     @if($discountCouponFetchDatass == "")
-                                    <div class="p-2 border">
+                                    <div class="p-2 border zouple-coupon-box">
                                         <div class="h6 m-0 pb-2 ">Coupon</div>
                                         <div class="input-group  d-flex border-bottom " style="border-color:black!important;">
                                            <input  placeholder="Coupon Code" type="text" class="form-control border-0  shadow-none deliveryPlace m-0 font-weight-normal  h-100"  name="coupon_code" id="coupon">
@@ -832,11 +864,11 @@
                                         </div>
                                     </div>
                                     @endif
-                                    <div class="text-center py-4" style="font-size: 13px;">
+                                    <div class="text-center py-4 zouple-summary-kicker">
                                         Item(s): <span class="font-weight-bold">{{$cart_item}}</span>
                                     </div>
 
-                                    <div style="font-size:13px;" class="px-3 py-2  border-bottom d-flex justify-content-between">
+                                    <div class="px-3 py-2 border-bottom d-flex justify-content-between zouple-summary-line">
                                         <div class="">Sub - Total</div>
                                         <div><i class="{{$iicon}} pr-2"></i><span>{{$ttl_net_amt}}</span></div>
                                     </div>
@@ -884,29 +916,53 @@
                                     @if(isset($discountAmount))
                                     <input type="hidden" name="total_discount" value="{{$discountAmount}}" id="total_discount">
                                     <input type="hidden" name="discount" value="{{$discountCouponFetchData}}" id="discount">
-                                    <div style="font-size:13px;" class="px-3 py-2  border-bottom d-flex justify-content-between">
+                                    <div class="px-3 py-2 border-bottom d-flex justify-content-between zouple-summary-line">
                                         <div class="">Discount({{$discountCouponFetchData}}%)</div>
                                         <div><i class="{{$iicon}} pr-2"></i><span>{{$discountAmount}}</span></div>
                                     </div>
                                     @endif
-                                    <div style="font-size:13px;" class="d-flex justify-content-between" id="discountShow">
+                                    <div class="d-flex justify-content-between zouple-summary-line" id="discountShow">
                                     
                                     </div>
-                                    <div style="font-size:13px;" class="px-3 py-2  border-bottom d-flex justify-content-between">
+                                    <div class="px-3 py-2 border-bottom d-flex justify-content-between zouple-summary-line">
                                         <div class="">Shipping Charge</div>
                                         <div><i class="{{$iicon}} pr-2"></i><span>{{$total_shipping}}</span></div>
                                     </div>
 
-                                    <div class="h6 px-3 py-3  d-flex justify-content-between">
+                                    <div class="h6 px-3 py-3 d-flex justify-content-between zouple-summary-total">
                                         <div class="">TOTAL PAYABLE</div>
                                         <div><i class="{{$iicon}} pr-2"></i><span id="total_amount">{{$total_final_amount}}</span></div>
                                     </div>
                                 </div>
-                                <div class=" my-4">
+                                <div class="payment-methods zouple-payment-methods">
+                                    <div class="h6 mb-2">Payment Method</div>
+                                    <label class="payment-method-option">
+                                        <input type="radio" name="payment_method" value="paytm" {{ ($currencySession ?? '') == 'rupee_price' ? 'checked' : '' }}>
+                                        <span class="payment-method-copy">
+                                            <strong>UPI / Card / Netbanking</strong>
+                                            <small>Secure online payment through Paytm gateway.</small>
+                                        </span>
+                                    </label>
+                                    <label class="payment-method-option">
+                                        <input type="radio" name="payment_method" value="paypal" {{ ($currencySession ?? '') != 'rupee_price' ? 'checked' : '' }}>
+                                        <span class="payment-method-copy">
+                                            <strong>Card / PayPal</strong>
+                                            <small>Recommended for international payments.</small>
+                                        </span>
+                                    </label>
+                                    <label class="payment-method-option">
+                                        <input type="radio" name="payment_method" value="cod">
+                                        <span class="payment-method-copy">
+                                            <strong>Cash on Delivery</strong>
+                                            <small>Pay when your order arrives, where available.</small>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="my-4 zouple-payment-action">
                                     <!-- Button -->
                                     <a href="#" class="text-white">
                                         <button onclick="nextPrev(1)" type="submit" class="cta border-0" onclick="nextPrev(1)">
-                                            <span>Process to Checkout</span>
+                                            <span>Proceed to Payment</span>
                                             <svg width="13px" height="10px" viewBox="0 0 13 10">
                                                 <path d="M1,5 L11,5"></path>
                                                 <polyline points="8 1 12 5 8 9"></polyline>
@@ -971,7 +1027,7 @@
                             <input type="text" placeholder="Enter your Address" class="form-control" id="Adress" name="address" required>
                         </div>
                         <div class="form-group">
-                            <label for="City">LandMark<span class="text-danger">*</span></label>
+                            <label for="City">LandMark</label>
                             <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark">
                         </div>
 
@@ -1062,7 +1118,7 @@
                             <input type="text" placeholder="Enter your Address" class="form-control" name="address" required id="eaddress">
                         </div>
                         <div class="form-group">
-                            <label for="City">LandMark<span class="text-danger">*</span></label>
+                            <label for="City">LandMark</label>
                             <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="elandmark" name="landmark">
                         </div>
 
@@ -1118,6 +1174,7 @@
 
 
 </section>
+</div>
 
 
 

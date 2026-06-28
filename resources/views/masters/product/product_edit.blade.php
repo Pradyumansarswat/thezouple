@@ -74,7 +74,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -278,24 +278,68 @@
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label"> Product Header Image<span class="text-danger"><b> (184*245 Pixel *)</b></span></label>
-                                <input type="file" name="product_header_image" id="pincode" class="form-control" accept="image/x-png,image/gif,image/jpeg" value="{{$product_update->product_header_image}}">
+                                <input type="file" name="product_header_image" id="product_header_image_input" class="form-control product-header-input" accept="image/png,image/gif,image/jpeg,image/webp">
 
                                 <input type="hidden" name="product_header_image_old" value="{{$product_update->product_header_image}}">
-                                <img src="{{URL::asset('public/upload/product/'.$product_update->product_header_image)}}" width="130px"> 
+                                @php
+                                    $productHeaderImage = trim((string) $product_update->product_header_image);
+                                    $hasProductHeaderImage = z_media_exists($productHeaderImage, 'product');
+                                @endphp
+                                @if($hasProductHeaderImage)
+                                    <img src="{{ z_media_url($productHeaderImage, 'product') }}" class="admin-product-thumb" alt="{{ $product_update->product_title }}">
+                                @else
+                                    <div class="admin-product-placeholder">{{ strtoupper(substr(trim($product_update->product_title ?: 'P'), 0, 1)) }}</div>
+                                @endif
+                                <div class="admin-selected-preview-block" id="product_header_preview_block" style="display:none;">
+                                    <small class="text-muted d-block mt-2">Selected new header image, not saved yet:</small>
+                                    <div class="admin-product-gallery-grid" id="product_header_preview"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label"> Product Images <span class="text-danger"><b> (Multiple Iamge - 400*400 Pixel *)</b></span></label>
-                                <input type="file" name="product_images[]" class="form-control" accept="image/x-png,image/gif,image/jpeg" multiple value="$product_update->product_images}}">
+                                <input type="file" name="product_images[]" id="product_gallery_input" class="form-control product-gallery-input" accept="image/png,image/gif,image/jpeg,image/webp" multiple>
 
                                 <input type="hidden" name="product_images_old" value="{{$product_update->product_images}}">
+                                <label class="admin-product-replace-gallery mt-2">
+                                    <input type="checkbox" name="replace_gallery_images" value="1">
+                                    Replace all old gallery images with newly uploaded images
+                                </label>
                             </div>
                             <?php
-                                $imgs = json_decode($product_update->product_images);?>
-                                 @foreach($imgs as $val)
-                                  <img src="{{URL::asset('public/upload/product/'.$val)}}" width="130px">
-                                 @endforeach
+                                $imgs = $product_gallery_images[$product_update->product_id] ?? json_decode($product_update->product_images, true);
+                                $imgs = is_array($imgs) ? $imgs : [];
+                            ?>
+                                 <small class="text-muted d-block mb-2">Saved gallery images:</small>
+                                 <div class="admin-product-gallery-grid" id="saved_product_gallery">
+                                 @forelse($imgs as $val)
+                                    @php
+                                        $galleryImage = trim((string) $val);
+                                        $hasGalleryImage = z_media_exists($galleryImage, 'product');
+                                    @endphp
+                                    <label class="admin-product-image-option">
+                                    @if($hasGalleryImage)
+                                        <img src="{{ z_media_url($galleryImage, 'product') }}" class="admin-product-thumb" alt="{{ $product_update->product_title }}">
+                                    @else
+                                        <div class="admin-product-placeholder">{{ strtoupper(substr(trim($product_update->product_title ?: 'P'), 0, 1)) }}</div>
+                                    @endif
+                                        @if($galleryImage !== '')
+                                            <span class="admin-product-remove-check">
+                                                <input type="checkbox" name="remove_gallery_images[]" value="{{ $galleryImage }}">
+                                                Remove
+                                            </span>
+                                        @endif
+                                    </label>
+                                 @empty
+                                    <div class="admin-product-empty-state">No gallery images saved yet. Choose files above and click Update.</div>
+                                 @endforelse
+                                 </div>
+                                 <div class="admin-selected-preview-block" id="product_gallery_preview_block" style="display:none;">
+                                    <small class="text-muted d-block mt-3 mb-2">Selected new gallery images, not saved yet:</small>
+                                    <div class="admin-product-gallery-grid" id="product_gallery_preview"></div>
+                                 </div>
+                                 <small class="text-muted d-block mt-2">Tick Remove for selected old images, or use Replace All when uploading a fresh gallery.</small>
                         </div>
                     </div>
                     <hr>
@@ -489,6 +533,44 @@
 
         $(document).on('click', '.remove', function() {
             $(this).closest('tr').remove();
+        });
+
+        function renderSelectedImages(input, previewSelector, blockSelector) {
+            var files = input.files || [];
+            var $preview = $(previewSelector);
+            var $block = $(blockSelector);
+
+            $preview.empty();
+            if (!files.length) {
+                $block.hide();
+                return;
+            }
+
+            Array.prototype.forEach.call(files, function(file) {
+                if (!file.type || !file.type.match(/^image\//)) {
+                    return;
+                }
+
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    var $item = $('<div class="admin-product-image-option admin-product-selected-option"></div>');
+                    $item.append('<img src="' + event.target.result + '" class="admin-product-thumb" alt="Selected product image">');
+                    $item.append('<span class="admin-product-selected-name"></span>');
+                    $item.find('.admin-product-selected-name').text(file.name);
+                    $preview.append($item);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            $block.show();
+        }
+
+        $('#product_header_image_input').on('change', function() {
+            renderSelectedImages(this, '#product_header_preview', '#product_header_preview_block');
+        });
+
+        $('#product_gallery_input').on('change', function() {
+            renderSelectedImages(this, '#product_gallery_preview', '#product_gallery_preview_block');
         });
 
         $('#insert_form').on('submit', function(event) {

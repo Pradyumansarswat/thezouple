@@ -118,7 +118,7 @@
                     @foreach($proDetails as $key => $pros)
                     <div class="row py-1 my-2 border-top border-bottom">
                         <div class="col-4 col-sm-2 p-0">
-                            <img src="{{URL::asset('public/upload/product/'.$proImage[$key])}}" width="100%">
+                            <img src="{{ z_media_url($proImage[$key], 'product') }}" width="100%">
                         </div>
                         <?php
                         $pro_Det = explode('-',$pros);
@@ -334,9 +334,9 @@
                             <div class="text-center border"><b>{{$key}}</b></div>
                             <div class="text-center border">
                                 @if($key == "febric" || $key == "FEBRIC" || $key == "Febric")
-                                <img src="{{URL::asset('public/upload/shirt/'.$febricImage[$dt])}}" width="100%">
+                                <img src="{{ z_media_url($febricImage[$dt], 'shirt') }}" width="100%">
                                 @else
-                                <img src="{{URL::asset('public/upload/shirt/'.$elementValueImage[$dt])}}" width="100%">
+                                <img src="{{ z_media_url($elementValueImage[$dt], 'shirt') }}" width="100%">
                                 @endif
                             </div>
                             <div class="text-center border">

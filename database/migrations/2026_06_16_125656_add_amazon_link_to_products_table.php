@@ -6,27 +6,21 @@ use Illuminate\Database\Migrations\Migration;
 
 class AddAmazonLinkToProductsTable extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            //
+            if (!Schema::hasColumn('products', 'amazon_link')) {
+                $table->string('amazon_link', 500)->nullable()->after('product_shipping');
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
     public function down()
     {
-        Schema::table('products', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('products', 'amazon_link')) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->dropColumn('amazon_link');
+            });
+        }
     }
 }

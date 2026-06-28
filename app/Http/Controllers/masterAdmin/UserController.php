@@ -10,20 +10,22 @@ use DB;
 
 use App\User;
 use App\Contact;
+use App\Services\AdminRecycleBinService;
 use Mail;
+use Log;
 
 class UserController extends Controller
 {
     public function newsubscribers_list()
     {
-        $data['news_data'] = DB::table('subscribe')->orderby('subscribe_id','desc')->get();
+        $data['news_data'] = AdminRecycleBinService::activeTable('subscribe')->orderby('subscribe_id','desc')->get();
         $page_title = "Subscribers - Zouple";
        return view('masters.user.newsubscribers',compact('page_title'),$data);
     }
     public function newsubscribersdestory(Request $request,$id)
     {
-        DB::table('subscribe')->where('subscribe_id','=',$id)->delete();
-        $request->session()->flash('alert-success','Subscribers has been sucessfully deleted.');
+        AdminRecycleBinService::softDelete('subscribers', $id);
+        $request->session()->flash('alert-success','Subscriber moved to Recycle Bin.');
         return Redirect::route('newsubscribers');
     }
 
@@ -32,7 +34,7 @@ class UserController extends Controller
     public function user_list()
     {
 
-       $data['userlist_data'] = DB::table('users')
+       $data['userlist_data'] = AdminRecycleBinService::activeTable('users')
             ->where('users.user_role','FRONT')
             ->orderBy('users.id')
             ->get();
@@ -43,8 +45,7 @@ class UserController extends Controller
 
     public function user_data_delete(Request $request,$id)
     { 
-        $check1 = User::where('id',$id)->delete();
-        $check2 = DB::table('user_information')->where('user_id',$id)->delete();
+        AdminRecycleBinService::softDelete('customers', $id);
        
         return Redirect::route('userlist');
     }
@@ -58,8 +59,11 @@ class UserController extends Controller
 
     public function change_user_password_update_save(Request $request)
     {
+      $this->validate($request, [
+          'password' => 'required|string|min:8|regex:/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/',
+      ]);
       $id = $request->id;
-      $old_pass = Auth::user()->password;
+      $old_pass = Auth::guard('admin')->user()->password;
       $old_password = $request->oldpassword;
       if((Hash::check($old_password , $old_pass)))
       {
@@ -68,7 +72,9 @@ class UserController extends Controller
          $input['email']=$request->email; 
          User::where('id','=',$id)->update($input); 
           
-          Auth::logout();
+          Auth::guard('admin')->logout();
+          $request->session()->invalidate();
+          $request->session()->regenerateToken();
           $request->session()->flash('alert-danger','Password has been sucessfully updated.'); 
           return redirect('masterAdmin');
       }
@@ -104,8 +110,8 @@ class UserController extends Controller
 
     public function contactDelete_format(Request $request,$contact_id)
     {
-        Contact::where('contact_id','=',$contact_id)->delete();
-        $request->session()->flash('alert-success','Contact has been sucessfully deleted.');
+        AdminRecycleBinService::softDelete('enquiries', $contact_id);
+        $request->session()->flash('alert-success','Contact enquiry moved to Recycle Bin.');
         return Redirect::route('contact_information');
     }
 
@@ -126,6 +132,11 @@ class UserController extends Controller
 
     public function reloay_store(Request $request)
     {
+        $this->validate($request, [
+            'email' => 'required|email',
+            'message' => 'required|string|min:2',
+        ]);
+
         $email = $request->email;
         $message = $request->message;
         $messageBody = $message;       
@@ -145,13 +156,19 @@ class UserController extends Controller
 
         // Send email with error handling
         try {
-            Mail::send([], [], function ($message) use($data) {
+            $fromEmail = env('MAIL_FROM_ADDRESS') ?: DB::table('siteinfos')->where('siteinfo_id', 1)->value('meta_email') ?: config('mail.from.address');
+            $fromName = env('MAIL_FROM_NAME') ?: 'Zouple Support';
+            Mail::send([], [], function ($message) use($data, $fromEmail, $fromName) {
+                if ($fromEmail) {
+                    $message->from($fromEmail, $fromName);
+                }
                 $message->to($data['email'])
                     ->subject($data['subject'])
                     ->setBody($data['msg'], 'text/html');
             });
             $request->session()->flash('alert-success', 'Reply has been sent successfully!');
         } catch (\Exception $e) {
+            Log::error('Contact enquiry reply mail failed', ['email' => $email, 'error' => $e->getMessage()]);
             $request->session()->flash('alert-warning', 'Reply saved but email could not be sent. Please check mail settings.');
         }
 

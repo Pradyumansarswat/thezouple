@@ -67,9 +67,9 @@
                 <div class="p px-4">
                     <ul class="list-unstyled pl-2">
                         <li>
-                            contact@thezouple.com (For General Enquiry)
+                            contact@zouple.in(For General Enquiry)
                             <br>
-                            order@thezouple.com (For order related)
+                            order@zouple.in(For order related)
                         </li>
 
                     </ul>

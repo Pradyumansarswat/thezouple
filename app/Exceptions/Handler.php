@@ -46,6 +46,23 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        if ($request->expectsJson() === false && $this->isFriendlyUploadException($exception)) {
+            return redirect()->back()->withInput()->with('alert-danger', $exception->getMessage());
+        }
+
         return parent::render($request, $exception);
+    }
+
+    private function isFriendlyUploadException(Exception $exception)
+    {
+        if (!$exception instanceof \RuntimeException && !$exception instanceof \InvalidArgumentException) {
+            return false;
+        }
+
+        $message = $exception->getMessage();
+
+        return strpos($message, 'Cloudinary') !== false
+            || strpos($message, 'New uploads are not saved locally') !== false
+            || strpos($message, 'Please upload a valid') !== false;
     }
 }

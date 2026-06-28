@@ -370,7 +370,7 @@
                 @foreach($wishs_lists as $wish)
                 <div class="col-12  py-4 col-sm-6 col-md-4 col-lg-12 d-flex">
                     <div class="col-4 p-0">
-                        <img src="{{URL::asset('public/upload/product/'.$wish->product_header_image)}}" alt="IMG" width="100%">
+                        <img src="{{ z_media_url($wish->product_header_image, 'product') }}" alt="IMG" width="100%">
                     </div>
 
                     <div class="col-8 pr-0">
@@ -473,7 +473,7 @@
                         <a href="{{url('product', $data->slug)}}">
                             <div class="card " style="border-radius: 15px; overflow: hidden;">
                                 <div class="card-body p-0 position-relative">
-                                    <img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="100%">
+                                    <img src="{{ z_media_url($data->product_header_image, 'product') }}" width="100%">
                                 </div>
                                 <?php 
                                 $currencySession = Session::get('currency');
@@ -502,10 +502,10 @@
                                  }
                                  else
                                  {
-                                    $iicon = "fa fa-usd";
-                                    $proPrice = $data->dollar_price;
-                                     $netAmount = $data->dollar_net_amount;
-                                     $finalAmount = round($data->dollar_net_with_gst);
+                                    $iicon = "fa fa-inr";
+                                    $proPrice = $data->rupee_price;
+                                     $netAmount = $data->rupee_net_amount;
+                                     $finalAmount = round($data->rupee_net_with_gst);
                                  }
                                 $proDiscount = $data->product_discount;
                                 $maxAmount = round(($proPrice * ($data->product_gst / 100)) + $proPrice);

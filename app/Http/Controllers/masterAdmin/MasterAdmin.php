@@ -12,20 +12,24 @@ class MasterAdmin extends Controller
 {
     public function login(Request $request)
     {
-        if(Auth::check()){
-            if(Auth::user()->user_role=='ADMIN') {
-               return redirect(route('dashboard'));
-            }
+        if(Auth::guard('admin')->check()){
+            return redirect(route('admin.dashboard'));
         }
         if($request->isMethod('post')){
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
+
             $userdata = array(
                 'email' 		=> 	$request->get('email'),
                 'password' 		=> 	$request->get('password'),
                 'user_role' 	=> 	'ADMIN',
                 'is_active' 	=> 	'ACTIVE',
             );
-            if (Auth::attempt($userdata)){
-                return redirect(route('dashboard'));
+            if (Auth::guard('admin')->attempt($userdata)){
+                $request->session()->regenerate();
+                return redirect(route('admin.dashboard'));
             }else{
                 $request->session()->flash('alert-danger','Invaild Id and Password !!');
                 return Redirect::back() ->withInput();
@@ -40,9 +44,11 @@ class MasterAdmin extends Controller
     
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('admin')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
         $request->session()->flash('alert-danger','You are Logout !!');
-        return redirect(route('login'));
+        return redirect(route('admin.login'));
     }
     
     public function check_mail(Request $request)

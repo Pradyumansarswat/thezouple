@@ -14,6 +14,7 @@ use DB;
 use Input;
 use Mail;
 use App\Helper\BasicHelper;
+use App\Services\AdminRecycleBinService;
 
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\orderStatusExport;
@@ -22,11 +23,15 @@ class OrderController extends Controller
 {
     public function order_information_list(Request $request)
     {
-       $page_title = "Order List - Zouple";
+        $page_title = "Order List - Zouple";
+        $proTitle = [];
+        $proImage = [];
+        $febricName = [];
+        $elementValueName = [];
         
-        $data['order_data'] =  DB::table('order_system')->orderby('order_id','desc')->join('users','users.id','order_system.user_id')->where('order_system.user_report',Null)->get();
+        $data['order_data'] =  AdminRecycleBinService::activeTable('order_system')->orderby('order_id','desc')->join('users','users.id','order_system.user_id')->where('order_system.user_report',Null)->get();
         
-        $order_data = DB::table('order_system')->where('order_type','!=','DESIGN-SHIRT')->get();
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('order_type','!=','DESIGN-SHIRT')->get();
         foreach($order_data as $as)
         {
             $proq = json_decode($as->product_details);
@@ -38,7 +43,7 @@ class OrderController extends Controller
             }
         }
         
-      return view('masters.order.order_list',compact('page_title','proTitle','proImage'),$data);
+      return view('masters.order.order_list',compact('page_title','proTitle','proImage','febricName','elementValueName'),$data);
         
     }
     
@@ -64,7 +69,7 @@ class OrderController extends Controller
        
        $order_status = $request->order_status;
         
-        $data['order_data'] =  DB::table('order_system')->orderby('order_id','desc')->join('users','users.id','order_system.user_id')->where('order_system.order_status', $order_status)->get();
+        $data['order_data'] =  AdminRecycleBinService::activeTable('order_system')->orderby('order_id','desc')->join('users','users.id','order_system.user_id')->where('order_system.order_status', $order_status)->get();
         
         foreach($data['order_data'] as $datass)
         {
@@ -105,8 +110,8 @@ class OrderController extends Controller
 
     public function orderDelete_format(Request $request,$order_id)
     {
-        DB::table('order_system')->where('order_id','=',$order_id)->delete();
-        $request->session()->flash('alert-success','Order has been deleted Successfully!!');
+        AdminRecycleBinService::softDelete('orders', $order_id);
+        $request->session()->flash('alert-success','Order moved to Recycle Bin.');
         return Redirect::route('order_information');
     }
     
@@ -129,8 +134,8 @@ class OrderController extends Controller
 
     public function ordersDeletesFormat(Request $request,$order_id)
     {
-        DB::table('order_system')->where('order_id','=',$order_id)->delete();
-        $request->session()->flash('alert-success','Order has been deleted Successfully!!');
+        AdminRecycleBinService::softDelete('orders', $order_id);
+        $request->session()->flash('alert-success','Order moved to Recycle Bin.');
         return Redirect::route('order_report');
     }
 
@@ -290,7 +295,7 @@ class OrderController extends Controller
                          
                          
                          <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                             In case of any questions please write to us at order@thezouple.com and we will revert to you as soon as we receive your email. <br><br>
+                             In case of any questions please write to us at order@zouple.in and we will revert to you as soon as we receive your email. <br><br>
                          Thank You,<br>
                          The Zouple
                          </div>
@@ -397,7 +402,7 @@ class OrderController extends Controller
                          
                          <div style='font-weight: normal;clear:both; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>Oops! We are running out of stock on the product you have ordered for. This one for sure is high on demand. Apology for the inconvenience caused to you. </div><br>
                          
-                         <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>We will refund your entire money that you have paid for the product. <br> <br> Kindly email below details on order@thezouple.com in order to process your refund.</div>
+                         <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>We will refund your entire money that you have paid for the product. <br> <br> Kindly email below details on order@zouple.in in order to process your refund.</div>
                          
                          <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'><br>
                          Name - <br>
@@ -416,7 +421,7 @@ class OrderController extends Controller
                          
                          
                          <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                             In case of any questions please write to us at order@thezouple.com and we will revert to you as soon as we receive your email. <br><br>
+                             In case of any questions please write to us at order@zouple.in and we will revert to you as soon as we receive your email. <br><br>
                          Thank You,<br>
                          The Zouple Team
                          </div>
@@ -471,7 +476,7 @@ class OrderController extends Controller
                          
                          
                          <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                             In case of any questions please write to us at contact@thezouple.com and we will revert to you as soon as we receive your email. 
+                             In case of any questions please write to us at contact@zouple.in and we will revert to you as soon as we receive your email. 
 
                             <br><br>
                          Thank You,<br>
@@ -517,7 +522,7 @@ class OrderController extends Controller
                          
                          <br>
                          <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                            In case of any questions please write to us at contact@thezouple.com and we will revert to you as soon as we receive your email. 
+                            In case of any questions please write to us at contact@zouple.in and we will revert to you as soon as we receive your email. 
 
                         <br><br>
                          Thank You,<br>
@@ -563,12 +568,13 @@ class OrderController extends Controller
 
     public function orderShow_format(Request $request,$order_number)
     {
-        $data['order_data'] =  DB::table('order_system')
+        $data['order_data'] =  AdminRecycleBinService::activeTable('order_system')
             ->join('users','users.id','order_system.user_id')
+             ->whereNull('users.deleted_at')
              ->where('order_number',$order_number)
             ->get();
 
-        $order_data = DB::table('order_system')->where('order_number', $order_number)->get();
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('order_number', $order_number)->get();
 
         if(!$order_data->isEmpty())
         {
@@ -605,7 +611,8 @@ class OrderController extends Controller
     {
         $page_title = "Order Report - Zouple";
         
-        $data['order_data'] =  DB::table('order_system')->join('users','users.id','order_system.user_id')
+        $data['order_data'] =  AdminRecycleBinService::activeTable('order_system')->join('users','users.id','order_system.user_id')
+        ->whereNull('users.deleted_at')
         ->where('user_report','!=',"")->get();
         
 
@@ -692,7 +699,7 @@ class OrderController extends Controller
                          
                          <br>
                          <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                            In case of any questions please write to us at contact@thezouple.com and we will revert to you as soon as we receive your email. 
+                            In case of any questions please write to us at contact@zouple.in and we will revert to you as soon as we receive your email. 
 
                         <br><br>
                          Thank You,<br>

@@ -11,7 +11,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -47,7 +47,7 @@
                             <div class="form-group">
                                 <label class="control-label"> Category Image <span class="text-danger">(Image Dimensions - 200*182 Pixel *)</span></label>
                                 <input class="form-control" type="file" name="image" accept="image/x-png,image/gif,image/jpeg">
-                                <input type="hidden" name="image" value="{{$data->image}}" />
+                                <input type="hidden" name="existing_image" value="{{$data->image}}" />
                                 <input type="hidden" name="parent_id" value="{{$data->parent_id}}" />
                             </div>
                         </div>
@@ -60,7 +60,7 @@
                             </div>
                         </div>
                         <div class="col-sm-6 pb-4">
-                            <img src="{{URL::asset('public/upload/category/'.$data->image)}}" width="300px">
+                            <img src="{{ z_media_url($data->image, 'category') }}" width="300px">
                         </div>
 
 

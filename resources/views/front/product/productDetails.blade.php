@@ -235,6 +235,35 @@
 
 
 
+    function normalizeStockQty(value) {
+        var qty = parseInt(value, 10);
+        return isNaN(qty) || qty < 0 ? 0 : qty;
+    }
+
+    function syncProductQuantityState(data) {
+        var availableQty = normalizeStockQty(data['qty']);
+        var currentQty = parseInt($('#qty').val(), 10);
+
+        if (isNaN(currentQty) || currentQty < 1) {
+            currentQty = 1;
+        }
+
+        if (availableQty > 0 && currentQty > availableQty) {
+            currentQty = availableQty;
+        }
+
+        $('#qty')
+            .val(currentQty)
+            .attr('max', availableQty > 0 ? availableQty : 1)
+            .prop('disabled', availableQty <= 0);
+
+        $('.btn-num-product-down, .btn-num-product-up')
+            .prop('disabled', availableQty <= 0)
+            .toggleClass('disabled', availableQty <= 0);
+
+        $('#stock_avl').html(availableQty > 0 ? 'Availability : ' + availableQty : 'Availability : Out of stock');
+    }
+
 
 
     function changeQuantity(str) {
@@ -249,7 +278,10 @@
             filter.push(m);
         }
         @endforeach
-        var pro_qty = $('#qty').val();
+        var pro_qty = parseInt($('#qty').val(), 10);
+        if (isNaN(pro_qty) || pro_qty < 1) {
+            pro_qty = 1;
+        }
         if (str == "min") {
             pro_qty = parseInt(pro_qty) - 1;
         } else if (str == "max") {
@@ -257,6 +289,10 @@
         } else {
             pro_qty = pro_qty;
         }
+        if (pro_qty < 1) {
+            pro_qty = 1;
+        }
+        $('#qty').val(pro_qty);
 
         var product_id = $('#product_id').val();
         $.ajax({
@@ -304,7 +340,7 @@
                         $('#price').html("");
                     }
                 }
-                $('#stock_avl').html('Availability : ' + data['qty']);
+                syncProductQuantityState(data);
 
             }
         });
@@ -328,7 +364,11 @@
         }
         @endforeach
         var product_id = $('#product_id').val();
-        var pro_qty = $('#qty').val();
+        var pro_qty = parseInt($('#qty').val(), 10);
+        if (isNaN(pro_qty) || pro_qty < 1) {
+            pro_qty = 1;
+            $('#qty').val(pro_qty);
+        }
         $.ajax({
             url: '../checkProductFilterPrice',
             type: "GET",
@@ -370,7 +410,7 @@
                     }
 
                 }
-                $('#stock_avl').html('Availability : ' + data['qty']);
+                syncProductQuantityState(data);
 
 
 
@@ -529,21 +569,43 @@
         $proQty = $product->product_quantity;
         ?>
         <div class="col-12 p-0 col-xs-12 d-block flex-wrap col-sm-12 col-md-5 border">
-            <?php
-                                    
-            $imgss = json_decode($product->product_images);
-            ?>
-            @foreach($imgss as $vals)
-            <div class=" text-center"><a href="{{URL::asset('public/upload/product/'.$vals)}}" class="MagicZoom" id="plant"><img src="{{URL::asset('public/upload/product/'.$vals)}}"></a></div>
-            @break;
-            @endforeach
-            <?php
-                                    
-	                $imgs = json_decode($product->product_images);
-	                ?>
+            @php
+                $savedGalleryImages = $product_gallery_images[$product->product_id] ?? json_decode($product->product_images, true);
+                $savedGalleryImages = is_array($savedGalleryImages) ? $savedGalleryImages : [];
+                $galleryImages = [];
+                $headerImage = trim((string) $product->product_header_image);
+
+                if ($headerImage !== '' && z_media_exists($headerImage, 'product')) {
+                    $galleryImages[] = $headerImage;
+                }
+
+                $savedGalleryImages = array_values(array_filter($savedGalleryImages, function($image) {
+                    $image = trim((string) $image);
+                    return $image !== '' && z_media_exists($image, 'product');
+                }));
+
+                foreach ($savedGalleryImages as $image) {
+                    if (!in_array($image, $galleryImages, true)) {
+                        $galleryImages[] = $image;
+                    }
+                }
+            @endphp
+            @if(!empty($galleryImages))
+            <div class="text-center">
+                <a href="{{ z_media_url($galleryImages[0], 'product') }}" class="MagicZoom" id="plant">
+                    <img src="{{ z_media_url($galleryImages[0], 'product') }}" alt="{{ $product->product_title }}">
+                </a>
+            </div>
+            @else
+            <div class="product-image-placeholder">{{ strtoupper(substr(trim($product->product_title ?: 'P'), 0, 1)) }}</div>
+            @endif
             <div class="d-flex  m-4">
-                @foreach($imgs as $val)
-                <div class="col"><a data-zoom-id="plant" href="{{URL::asset('public/upload/product/'.$val)}}" data-image="{{URL::asset('public/upload/product/'.$val)}}"><img src="{{URL::asset('public/upload/product/'.$val)}}" class="magicImg" width="100%" style="max-width:100px;"></a></div>
+                @foreach($galleryImages as $val)
+                <div class="col">
+                    <a data-zoom-id="plant" href="{{ z_media_url($val, 'product') }}" data-image="{{ z_media_url($val, 'product') }}">
+                        <img src="{{ z_media_url($val, 'product') }}" class="magicImg" width="100%" style="max-width:100px;" alt="{{ $product->product_title }}">
+                    </a>
+                </div>
                 @endforeach
             </div>
         </div>
@@ -662,6 +724,14 @@
                 @else
                 {{-- Auto-select single option --}}
                 <?php $dt = $datas[0] ?? ''; ?>
+                @if($dt !== '')
+                <div class="col-12 py-2 attr-section">
+                    <div class="attr-label">{{ $data->attribute_name }}:</div>
+                    <div class="attr-pills">
+                        <span class="attr-pill selected">{{$dt}}</span>
+                    </div>
+                </div>
+                @endif
                 <input type="hidden" id="{{$data->attribute_name}}" value="{{$data->attribute_name}}:{{$dt}}">
                 @endif
                 @else
@@ -683,16 +753,17 @@
 
             </div>
 
+            <?php $proQty = (int) ($products->product_quantity ?? 0); ?>
             <div class="row mx-3 py-2">
                 <div class="col-12 col-sm-4 py-2  priceCart2">
-                    <div class="flex-w bo5 of-hidden">
-                        <button class="btn-num-product-down" style="background-color:black;" onclick="changeQuantity('min')">
+                    <div class="flex-w bo5 of-hidden zouple-qty-control">
+                        <button class="btn-num-product-down" style="background-color:black;" onclick="changeQuantity('min')" @if($proQty <= 0) disabled @endif>
                             <i class="fs-12 fa fa-minus text-white" aria-hidden="true"></i>
                         </button>
 
-                        <input class=" w-25 text-center num-product" type="number" name="qty" value="1" id="qty" onkeyup="changeQuantity('equal')">
+                        <input class=" w-25 text-center num-product" type="number" name="qty" value="1" min="1" max="{{ $proQty > 0 ? $proQty : 1 }}" id="qty" onkeyup="changeQuantity('equal')" @if($proQty <= 0) disabled @endif>
 
-                        <button class="btn-num-product-up " style="background-color:black;" onclick="changeQuantity('max')">
+                        <button class="btn-num-product-up " style="background-color:black;" onclick="changeQuantity('max')" @if($proQty <= 0) disabled @endif>
                             <i class="fs-12 fa fa-plus text-white" aria-hidden="true"></i>
                         </button>
                     </div>
@@ -731,7 +802,6 @@
 
 
                 </div>
-                <?php $proQty = $products->product_quantity; ?>
                 <div class="col-12 col-sm-4  text-md-right text-sm-left justify-content-end ">
                     <h6 style="color:black; font-weight: bold;" class="pt-2">
                         <span id="stockShow">
@@ -744,7 +814,7 @@
 
                 </div>
                 <div class="col-sm-12">
-                    <div class="text-danger h6 py-2 m-0" id="stock_avl">Availability : {{$proQty}}</div>
+                    <div class="text-danger h6 py-2 m-0" id="stock_avl">Availability : {{ $proQty > 0 ? $proQty : 'Out of stock' }}</div>
 
                 </div>
 
@@ -887,6 +957,16 @@
                 @endif
             </div>
 
+            @if(!empty($products->amazon_link))
+            <div class="row mx-3 justify-content-between">
+                <div class="my-3 pt-2 col-12 text-sm-center col-sm-12 col-md-12 col-lg-12 m-auto">
+                    <a href="{{ $products->amazon_link }}" target="_blank" class="btn m-0 py-2 w-100" style="background-color: #ff9900; color: #111; font-weight: bold; font-size: 17px !important; border: 1px solid #a88734;">
+                        <i class="fa fa-amazon pr-2"></i> Shop on Amazon
+                    </a>
+                </div>
+            </div>
+            @endif
+
             <div class="row mx-3 px-2 my-3">
                 <div class="col-12 col-sm-12 p-0 ">
                     <div class="input-group ">
@@ -954,7 +1034,7 @@
                                 @if($userImageProfile == "")
                                 <img src="{{URL::asset('public/front/images/user.jpg')}}" width="50px">
                                 @else
-                                <img src="{{URL::asset('public/upload/review/'.$data->user_profile)}}" width="50px" height="50px" class="rounded-circle border">
+                                <img src="{{ z_media_url($data->user_profile, 'review') }}" width="50px" height="50px" class="rounded-circle border">
                                 @endif
                             </div>
                             <div class="col-sm-11">
@@ -985,7 +1065,7 @@
                                     ?>
                                         @if($reviewProductImage != "")
                                         @foreach($imgs as $vals)
-                                        <img src="{{URL::asset('public/upload/review/'.$vals)}}" width="100px" height="100px">
+                                        <img src="{{ z_media_url($vals, 'review') }}" width="100px" height="100px">
                                         @endforeach
                                         @endif
                                     </div>
@@ -1036,7 +1116,7 @@
                             <a href="{{url('product', $relproduct->slug)}}">
                                 <div class="card " style="border-radius: 15px; overflow: hidden;">
                                     <div class="card-body p-0 position-relative">
-                                        <img src="{{URL::asset('public/upload/product/'.$relproduct->product_header_image)}}" width="100%">
+                                        <img src="{{ z_media_url($relproduct->product_header_image, 'product') }}" width="100%">
 
 
                                     </div>
@@ -1070,10 +1150,10 @@
                                          }
                                          else
                                          {
-                                            $iicon = "fa fa-usd";
-                                            $proPrice = $relproduct->dollar_price;
-                                             $netAmount = $relproduct->dollar_net_amount;
-                                             $finalAmount = round($relproduct->dollar_net_with_gst);
+                                            $iicon = "fa fa-inr";
+                                            $proPrice = $relproduct->rupee_price;
+                                             $netAmount = $relproduct->rupee_net_amount;
+                                             $finalAmount = round($relproduct->rupee_net_with_gst);
                                          }
                                         $proDiscount = $relproduct->product_discount;
                                         $maxAmount = round(($proPrice * ($relproduct->product_gst / 100)) + $proPrice);
@@ -1092,7 +1172,7 @@
 
                                             <div class="font-weight-normal m-0 text-white" style="font-size:14px">
                                                 <?php
-                                            $des = $data->product_title;
+                                            $des = $relproduct->product_title ?? '';
                                             echo $description = Str::words($des, '2');
                                         ?>
                                             </div>
@@ -1106,8 +1186,8 @@
 
                                 </div>
                             </a>
-                            <input type="hidden" name="product_id" id="product_id" value="{{$products->product_id}}">
-                            <input type="hidden" name="product_id" id="vendor_id" value="{{$products->vendor_id}}">
+                            <input type="hidden" name="product_id" id="product_id" value="{{$relproduct->product_id ?? ''}}">
+                            <input type="hidden" name="product_id" id="vendor_id" value="{{$relproduct->vendor_id ?? ''}}">
                             <input type="hidden" name="vendor" id="vendor" value="{{$vendor}}">
                             <input type="hidden" id="ip_address" value="{{$ip_address}}" disabled>
                         </div>

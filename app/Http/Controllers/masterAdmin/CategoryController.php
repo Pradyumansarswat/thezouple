@@ -14,6 +14,9 @@ use Input;
 use App\Helper\BasicHelper;
 
 use App\Attribute;
+use App\Services\AdminRecycleBinService;
+use App\Services\AdminMediaService;
+use Schema;
 
 class CategoryController extends Controller
 {
@@ -24,8 +27,13 @@ class CategoryController extends Controller
         Session::put('cate_level', 1);
         Session::save();
         $data['category_data'] = Category::where('parent_id',0)->get();
+        $attributeName = [];
+        $attributes = Attribute::select('attribute_id', 'name')->get();
+        foreach ($attributes as $attribute) {
+            $attributeName[$attribute->attribute_id] = $attribute->name;
+        }
         $page_title = "Categories List - Zouple";
-        return view('masters.category.category',compact('page_title'),$data);
+        return view('masters.category.category',compact('page_title', 'attributeName'),$data);
     }
     
     public function add_category(Request $request)
@@ -40,7 +48,7 @@ class CategoryController extends Controller
     
     public function category_store(Request $request)
     {
-       $input = $request->all();
+       $input = $this->safeInput($request);
        $input['attributesvalue'] = json_encode($request->attributesvalue);
       /*  echo $input['attributesvalue'];*/
        $cmsObj = new Category();
@@ -51,15 +59,11 @@ class CategoryController extends Controller
              
              'title' => 'required',
          )); 
-      if($request->file('image')!='')
+      if($request->hasFile('image') && $request->file('image')->isValid())
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = $filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/category/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $upload = $this->uploadImage($request->file('image'), 'categories', 'category');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'categorys', $upload['public_id']);
          
       } 
            Category::insert($input);
@@ -88,12 +92,12 @@ class CategoryController extends Controller
     }
     public function category_update_store(Request $request)
     {
-        $input = $request->all();
+        $input = $this->safeInput($request);
         $category_id = $request->category_id;
         $input['attributesvalue'] = json_encode($request->attributesvalue);
         $cmsObj = new Category();
        $input['slug'] = BasicHelper::getUniqueSlug($cmsObj, $request->title);
-      if($request->file('image')!='')
+      if($request->hasFile('image') && $request->file('image')->isValid())
       {
           $this->validate($request , array
          (    
@@ -101,16 +105,10 @@ class CategoryController extends Controller
              'title' => 'required'
          ));
           $data=DB::table('categorys')->where('category_id','=',$category_id)->value('image');
-          $fullpath=public_path('upload/category/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = $filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/category/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteImage('categorys', 'category_id', $category_id, 'category', $data);
+          $upload = $this->uploadImage($request->file('image'), 'categories', 'category');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'categorys', $upload['public_id']);
 
       } 
       
@@ -122,37 +120,12 @@ class CategoryController extends Controller
     
     public function categoryDestory(Request $request , $id)
     {
-      $data=DB::table('categorys')->where('category_id','=',$id)->value('image');
-      $fullpath=public_path('upload/category/').$data;
-      File::delete($fullpath);
-      $m = Category::where('category_id','=',$id)->delete();
-      $m1 = Category::where('parent_id','=',$id)->delete();
-        
-      $data = Product::where('category', 'LIKE', '%"'.$id.'"%')->get();
-      foreach($data as $dt)
-      {
-          echo $dt->category;
-          $old_cat =  json_decode($dt->category);
-          $pro_id = $dt->product_id;
-          foreach($old_cat as $old)
-          {
-              if($old == $id)
-              {
-                  
-              }
-              else
-              {
-                  $new[] = $old;
-              }
-              
-          }
-          $input['category'] =  json_encode($new);
-          DB::table('products')->where('product_id',$pro_id)->update($input);
-          unset($new);
+      AdminRecycleBinService::softDelete('categories', $id);
+      $children = Category::where('parent_id', $id)->pluck('category_id');
+      foreach($children as $childId) {
+          AdminRecycleBinService::softDelete('categories', $childId);
       }
-        
-      $request->session()->flash('alert-success','Category has been sucessfully deleted.
-');
+      $request->session()->flash('alert-success','Category moved to Recycle Bin.');
       return Redirect::route('category_list');
         
         
@@ -200,21 +173,17 @@ class CategoryController extends Controller
     public function sub_category_store(Request $request)
     {
         $p_id = $request->parent_id;
-        $input = $request->all();
+        $input = $this->safeInput($request);
         $input['attributesvalue'] = json_encode($request->attributesvalue);
         $this->validate($request , array
          (     
              'title' => 'required'
          )); 
-      if($request->file('image')!='')
+      if($request->hasFile('image') && $request->file('image')->isValid())
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = $filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/category/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $upload = $this->uploadImage($request->file('image'), 'categories', 'category');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'categorys', $upload['public_id']);
          
       } 
         
@@ -237,9 +206,9 @@ class CategoryController extends Controller
     {
         $p_id = $request->parent_id;
         $category_id = $request->category_id;
-        $input = $request->all();
+        $input = $this->safeInput($request);
         
-       if($request->file('image')!='')
+       if($request->hasFile('image') && $request->file('image')->isValid())
       {
           $this->validate($request , array
          (    
@@ -247,16 +216,10 @@ class CategoryController extends Controller
              'title' => 'required'
          ));
           $data=DB::table('categorys')->where('category_id','=',$category_id)->value('image');
-          $fullpath=public_path('upload/category/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = $filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/category/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteImage('categorys', 'category_id', $category_id, 'category', $data);
+          $upload = $this->uploadImage($request->file('image'), 'categories', 'category');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'categorys', $upload['public_id']);
 
       }  
        
@@ -314,13 +277,9 @@ class CategoryController extends Controller
         
           if($request->file('image')!='')
           {
-              $file=$request->file('image');
-              $filename=$file->getClientOriginalName();
-              $imgname = $filename;
-
-              $input['image']= $imgname;       
-              $destinationPath=public_path('upload/morepage/');       
-              $request->file('image')->move($destinationPath, $imgname);  
+              $upload = $this->uploadImage($request->file('image'), 'pages', 'morepage');
+              $input['image']= $upload['path'];
+              $this->setPublicId($input, 'other_page', $upload['public_id']);
           } 
         
         $cmsObj = new Otherpage();
@@ -344,16 +303,10 @@ class CategoryController extends Controller
         if($request->file('image')!='')
       {
           $data=DB::table('other_page')->where('other_id','=',$input['other_id'])->value('image');
-          $fullpath=public_path('upload/morepage/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = $filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/morepage/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteImage('other_page', 'other_id', $input['other_id'], 'morepage', $data);
+          $upload = $this->uploadImage($request->file('image'), 'pages', 'morepage');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'other_page', $upload['public_id']);
 
       } 
         
@@ -402,13 +355,9 @@ class CategoryController extends Controller
         
           if($request->file('image')!='')
           {
-              $file=$request->file('image');
-              $filename=$file->getClientOriginalName();
-              $imgname = $filename;
-
-              $input['image']= $imgname;       
-              $destinationPath=public_path('upload/morepage/');       
-              $request->file('image')->move($destinationPath, $imgname);  
+              $upload = $this->uploadImage($request->file('image'), 'pages', 'morepage');
+              $input['image']= $upload['path'];
+              $this->setPublicId($input, 'other_page', $upload['public_id']);
           } 
         
          $cmsObj = new Otherpage();
@@ -440,16 +389,10 @@ class CategoryController extends Controller
         if($request->file('image')!='')
       {
           $data=DB::table('other_page')->where('other_id','=',$input['other_id'])->value('image');
-          $fullpath=public_path('upload/morepage/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = $filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/morepage/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $this->deleteImage('other_page', 'other_id', $input['other_id'], 'morepage', $data);
+          $upload = $this->uploadImage($request->file('image'), 'pages', 'morepage');
+          $input['image']= $upload['path'];
+          $this->setPublicId($input, 'other_page', $upload['public_id']);
 
       } 
         
@@ -467,6 +410,35 @@ class CategoryController extends Controller
         $request->session()->flash('alert-success','Page Status Updated !!');
         return Redirect::route('sub_other_page',$p_id);
    }
+
+    private function safeInput(Request $request)
+    {
+        $input = array_merge($request->query->all(), $request->request->all());
+        unset($input['existing_image']);
+
+        return $input;
+    }
+
+    private function uploadImage($file, $cloudFolder, $localFolder)
+    {
+        return app(AdminMediaService::class)->uploadImage($file, $cloudFolder, $localFolder);
+    }
+
+    private function setPublicId(array &$input, $table, $publicId)
+    {
+        if (Schema::hasColumn($table, 'image_public_id')) {
+            $input['image_public_id'] = $publicId;
+        }
+    }
+
+    private function deleteImage($table, $keyColumn, $keyValue, $localFolder, $image)
+    {
+        $publicId = Schema::hasColumn($table, 'image_public_id')
+            ? DB::table($table)->where($keyColumn, $keyValue)->value('image_public_id')
+            : null;
+
+        app(AdminMediaService::class)->deleteMedia($image, $localFolder, $publicId, 'image');
+    }
     
     
     

@@ -14,13 +14,15 @@ use Input;
 use Mail;
 use App\Helper\BasicHelper;
 use App\Coupon;
+use App\Services\AdminRecycleBinService;
 
 class CouponController extends Controller
 {
     public function productCouponList(REQUEST $request)
     {
         $data['product_coupon_data'] = DB::table('product_coupon')->orderby('product_coupon_id', 'asc')->get();
-        $pros = DB::table('products')->get();
+        $data['proTitle'] = array();
+        $pros = DB::table('products')->select('product_id', 'product_title')->get();
         foreach($pros as $datas)
         {
             $data['proTitle'][$datas->product_id] = $datas->product_title;
@@ -32,7 +34,7 @@ class CouponController extends Controller
     public function productCouponStatusAllUpdateStore(Request $request)
     {
         
-        $input = $request->all();
+        $input = $request->except('_token', 'example_length');
         $is_active = $request->is_active; 
         DB::table('product_coupon')->update($input);
         $request->session()->flash('alert-success','Product Coupon Status has been sucessfully updated.');
@@ -41,16 +43,19 @@ class CouponController extends Controller
     
     public function addProductCouponpage(REQUEST $request)
     {
-         $data['product_data'] = DB::table('products')->orderby('product_id', 'asc')->get();
+         $data['product_data'] = AdminRecycleBinService::activeTable('products')->orderby('product_id', 'asc')->get();
          $page_title = "Add Product Coupon - Zouple";
          return view('masters.coupon.add_product_coupon',compact('page_title'), $data);
     }
     
     public function productCouponStore(REQUEST $request)
     {
-         $input = $request->all();
+         $this->validate($request, [
+             'product_id' => 'required|array',
+         ]);
+
+         $input = $request->except('_token', 'example_length');
          $input['product_id'] = json_encode($request->product_id);
-         unset($input['example_length']);
          DB::table('product_coupon')->insert($input);
          $request->session()->flash('alert-success','Product Coupon has been sucessfully added.');
          return Redirect::route('addProductCoupon');
@@ -58,7 +63,7 @@ class CouponController extends Controller
     
     public function productCouponUpdatepage(REQUEST $request, $product_coupon_id)
     {
-         $data['product_data'] = DB::table('products')->orderby('product_id', 'asc')->get();
+         $data['product_data'] = AdminRecycleBinService::activeTable('products')->orderby('product_id', 'asc')->get();
         
          $data['product_coupon_datas'] = DB::table('product_coupon')->where('product_coupon_id', $product_coupon_id)->get();
         
@@ -68,10 +73,14 @@ class CouponController extends Controller
     
     public function productCouponEditStore(REQUEST $request)
     {
-         $input = $request->all();
+         $this->validate($request, [
+             'product_id' => 'required|array',
+         ]);
+
+         $input = $request->except('_token', 'example_length');
          $product_coupon_id = $request->product_coupon_id; 
          $input['product_id'] = json_encode($request->product_id);
-         unset($input['example_length']);
+         unset($input['product_coupon_id']);
          DB::table('product_coupon')->where('product_coupon_id', $product_coupon_id)->update($input);
          $request->session()->flash('alert-success','Product Coupon has been sucessfully updated.');
          return Redirect::route('productCoupon');
@@ -87,8 +96,9 @@ class CouponController extends Controller
     
     public function productCouponStatusUpdateSave(Request $request)
     {
-        $input = $request->all();
+        $input = $request->except('_token', 'example_length');
         $product_coupon_id = $request->product_coupon_id; 
+        unset($input['product_coupon_id']);
         DB::table('product_coupon')->where('product_coupon_id', $product_coupon_id)->update($input);
         $request->session()->flash('alert-success','Product Coupon Status has been sucessfully updated.');
         return Redirect::route('productCoupon');
@@ -100,6 +110,11 @@ class CouponController extends Controller
     public function customerCouponList(REQUEST $request)
     {
         $data['customer_coupon_data'] = DB::table('customer_coupon')->orderby('customer_coupon_id', 'asc')->get();
+        $data['userTitle'] = array();
+        $users = DB::table('users')->select('id', 'name', 'email')->get();
+        foreach ($users as $user) {
+            $data['userTitle'][$user->id] = $user->name ?: ($user->email ?: ('Customer #' . $user->id));
+        }
         $page_title = "Customer Coupon - Zouple";
         return view('masters.coupon.customer_coupon',compact('page_title'), $data);
     }
@@ -108,7 +123,7 @@ class CouponController extends Controller
     public function customerCouponStatusAllUpdateStore(Request $request)
     {
         
-        $input = $request->all();
+        $input = $request->except('_token', 'example_length');
         $is_active = $request->is_active; 
         DB::table('customer_coupon')->update($input);
         $request->session()->flash('alert-success','Customer Coupon Status has been sucessfully updated.');
@@ -119,17 +134,16 @@ class CouponController extends Controller
     public function addCustomerCouponPage(REQUEST $request)
     {
          $page_title = "Add Customer Coupon - Zouple";
-         $data['user_data'] = DB::table('users')->where('user_role', 'FRONT')->orderby('id', 'DESC')->get();
+         $data['user_data'] = AdminRecycleBinService::activeTable('users')->where('user_role', 'FRONT')->orderby('id', 'DESC')->get();
          foreach($data['user_data'] as $dt)
          {
              $cust_id = $dt->id;
              $cust_ids[$cust_id] = $dt->id;
              $cust_name[$cust_id] = $dt->name;
-             $amount[$cust_id] = round(DB::table('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->sum('total_amount'));
+             $amount[$cust_id] = round(AdminRecycleBinService::activeTable('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->sum('total_amount'));
              
-             $last_dt  = DB::table('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->orderby('order_id','desc')->value('order_date');
-             $dates=date_create($last_dt);
-             $last_date[$cust_id] = date_format($dates,"d-M-Y");
+             $last_dt  = AdminRecycleBinService::activeTable('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->orderby('order_id','desc')->value('order_date');
+             $last_date[$cust_id] = $last_dt ? date('d-M-Y', strtotime($last_dt)) : 'No purchase';
              /*$last_date[$cust_id] = date('d-M-Y', strtotime($last_dt));*/
          }
         if(!$data['user_data']->isEmpty())
@@ -148,7 +162,11 @@ class CouponController extends Controller
     
     public function customerCouponStore(REQUEST $request)
     {
-         $input = $request->all();
+         $this->validate($request, [
+             'id' => 'required|array',
+         ]);
+
+         $input = $request->except('_token', 'example_length');
          $coupone = $request->coupon_code;
          $coupon_valid_days = $request->coupon_valid_days;
          $input['id']  = json_encode($request->id);
@@ -179,16 +197,16 @@ class CouponController extends Controller
         
          $data['customer_coupon_datas'] = DB::table('customer_coupon')->where('customer_coupon_id', $customer_coupon_id)->get();
             
-            $data['user_data'] = DB::table('users')->where('user_role', 'FRONT')->orderby('id', 'asc')->get();
+            $data['user_data'] = AdminRecycleBinService::activeTable('users')->where('user_role', 'FRONT')->orderby('id', 'asc')->get();
          foreach($data['user_data'] as $dt)
          {
              $cust_id = $dt->id;
              $cust_ids[$cust_id] = $dt->id;
              $cust_name[$cust_id] = $dt->name;
-             $amount[$cust_id] = round(DB::table('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->sum('total_amount'));
+             $amount[$cust_id] = round(AdminRecycleBinService::activeTable('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->sum('total_amount'));
              
-             $last_dt  = DB::table('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->orderby('order_id','desc')->value('order_date');
-             $last_date[$cust_id] = date('d-M-Y', strtotime($last_dt));
+             $last_dt  = AdminRecycleBinService::activeTable('order_system')->where('user_id',$cust_id)->where('payment_status','TXN_SUCCESS')->orderby('order_id','desc')->value('order_date');
+             $last_date[$cust_id] = $last_dt ? date('d-M-Y', strtotime($last_dt)) : 'No purchase';
          }
         if(!$data['user_data']->isEmpty())
         {
@@ -205,11 +223,16 @@ class CouponController extends Controller
     
     public function customerCouponEditStore(REQUEST $request)
     {
-         $input = $request->all();
+         $this->validate($request, [
+             'id' => 'required|array',
+         ]);
+
+         $input = $request->except('_token', 'example_length');
          $coupone = $request->coupon_code;
          $customer_coupon_id = $request->customer_coupon_id; 
          $coupon_valid_days = $request->coupon_valid_days;
          $input['id'] = json_encode($request->id);
+         unset($input['customer_coupon_id']);
          foreach($request->id as $user)
          {
              $email = DB::table('users')->where('id', $user)->value('email');
@@ -241,8 +264,9 @@ class CouponController extends Controller
     
     public function customerCouponStatusUpdateSave(Request $request)
     {
-        $input = $request->all();
+        $input = $request->except('_token', 'example_length');
         $customer_coupon_id = $request->customer_coupon_id; 
+        unset($input['customer_coupon_id']);
         DB::table('customer_coupon')->where('customer_coupon_id', $customer_coupon_id)->update($input);
         $request->session()->flash('alert-success','Customer Coupon Status has been sucessfully updated.');
         return Redirect::route('customerCoupon');
@@ -263,7 +287,7 @@ class CouponController extends Controller
     public function priceCouponStatusAllUpdateStore(Request $request)
     {
         
-        $input = $request->all();
+        $input = $request->except('_token', 'example_length');
         $is_active = $request->is_active; 
         DB::table('price_coupon')->update($input);
         $request->session()->flash('alert-success','Price Coupon Status has been sucessfully updated.');
@@ -278,7 +302,7 @@ class CouponController extends Controller
     
     public function pricesCouponStore(REQUEST $request)
     {
-         $input = $request->all();
+         $input = $request->except('_token', 'example_length');
          DB::table('price_coupon')->insert($input);
          $request->session()->flash('alert-success','Product Coupon has been sucessfully added.');
          return Redirect::route('addpricesCoupon');
@@ -293,9 +317,10 @@ class CouponController extends Controller
     
     public function pricesCouponEditStore(REQUEST $request)
     {
-         $input = $request->all();
+         $input = $request->except('_token', 'example_length');
        
          $price_coupon_id = $request->price_coupon_id; 
+         unset($input['price_coupon_id']);
          DB::table('price_coupon')->where('price_coupon_id', $price_coupon_id)->update($input);
          $request->session()->flash('alert-success','Price Coupon has been sucessfully updated.');
          return Redirect::route('pricesCoupon');
@@ -311,8 +336,9 @@ class CouponController extends Controller
     
     public function pricesCouponStatusUpdateSave(Request $request)
     {
-        $input = $request->all();
+        $input = $request->except('_token', 'example_length');
         $price_coupon_id = $request->price_coupon_id; 
+        unset($input['price_coupon_id']);
         DB::table('price_coupon')->where('price_coupon_id', $price_coupon_id)->update($input);
         $request->session()->flash('alert-success','Price Coupon Status has been sucessfully updated.');
         return Redirect::route('pricesCoupon');

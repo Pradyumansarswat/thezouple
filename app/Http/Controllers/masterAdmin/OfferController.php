@@ -11,6 +11,9 @@ use Validator;
 use DB;
 use App\Pincode;
 use App\Product;
+use App\Services\AdminRecycleBinService;
+use App\Services\AdminMediaService;
+use Schema;
 
 
 class OfferController extends Controller
@@ -33,13 +36,11 @@ class OfferController extends Controller
        $input = $request->all();
       if($request->file('image')!='')
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/offerbanner/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'offer-banners', 'offerbanner');
+          $input['image']= $upload['path'];
+          if (Schema::hasColumn('offerbanners', 'image_public_id')) {
+              $input['image_public_id'] = $upload['public_id'];
+          }
          
       } 
            Offerbanner::insert($input);
@@ -62,16 +63,15 @@ class OfferController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('offerbanners')->where('offerbanners_id','=',$offerbanners_id)->value('image');
-          $fullpath=public_path('upload/offerbanner/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/offerbanner/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $publicId = Schema::hasColumn('offerbanners', 'image_public_id')
+              ? DB::table('offerbanners')->where('offerbanners_id', $offerbanners_id)->value('image_public_id')
+              : null;
+          app(AdminMediaService::class)->deleteMedia($data, 'offerbanner', $publicId, 'image');
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'offer-banners', 'offerbanner');
+          $input['image']= $upload['path'];
+          if (Schema::hasColumn('offerbanners', 'image_public_id')) {
+              $input['image_public_id'] = $upload['public_id'];
+          }
 
       } 
       
@@ -83,11 +83,8 @@ class OfferController extends Controller
 
     public function offerbannerDelete(Request $request , $offerbanners_id)
     {
-      $data=DB::table('offerbanners')->where('offerbanners_id','=',$offerbanners_id)->value('image');
-      $fullpath=public_path('upload/offerbanner/').$data;
-      File::delete($fullpath);
-      $m = Offerbanner::where('offerbanners_id','=',$offerbanners_id)->delete();
-      $request->session()->flash('alert-success','Advertisement Banner has been sucessfully deleted.');
+      AdminRecycleBinService::softDelete('offerbanners', $offerbanners_id);
+      $request->session()->flash('alert-success','Advertisement banner moved to Recycle Bin.');
       return Redirect::route('offer');   
     }
 }

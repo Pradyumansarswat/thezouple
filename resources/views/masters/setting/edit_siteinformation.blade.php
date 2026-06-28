@@ -12,7 +12,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -48,6 +48,12 @@
                                 <div class="form-group">
                                     <label class="control-label"> Phone Number <span class="text-danger"></span></label>
                                     <input class="form-control" value="{{$site->phone_number}}"  type="text" name="phone_number" placeholder="Phone Number">
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label"> WhatsApp Number for Bulk Enquiry </label>
+                                    <input class="form-control" value="{{$site->whatsapp_number ?? ''}}" type="text" name="whatsapp_number" placeholder="Example: 916375134498">
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -168,6 +174,16 @@
                                 <div class="form-group">
                                     <label class="control-label">Minimum KG For Shippinng Free (Per KG)</label>
                                      <input class="form-control" value="{{$site->minimum_charge}}"  type="number" name="minimum_charge"  step="0.01" required placeholder="Minimum KG For Shippinng Free (Per KG)">
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label">Recycle Bin Auto Cleanup Days</label>
+                                     <select class="form-control" name="recycle_cleanup_days">
+                                        @foreach([30,60,90] as $days)
+                                            <option value="{{ $days }}" {{ ($site->recycle_cleanup_days ?? 90) == $days ? 'selected' : '' }}>{{ $days }} days</option>
+                                        @endforeach
+                                     </select>
                                 </div>
                             </div>
                  

@@ -8,11 +8,11 @@
             <ul class="app-breadcrumb breadcrumb">
                 <a class="btn btn-primary icon-btn" href="{{route('add_blog')}}"><i class="fa fa-plus"></i> Add Blog</a>
             </ul>
-        
+
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -57,19 +57,19 @@
                                     <tr>
                                         <td>{{$i}}.</td>
                                        <td>
-                                       		<img src="{{URL::asset('public/upload/blog/'.$data->image)}}" width="130px">
+                                       		<img src="{{ z_media_url($data->image, 'blog') }}" width="130px">
                                        </td>
                                         <td>
-                                       		<img src="{{URL::asset('public/upload/blog/'.$data->front_image)}}" width="130px">
+                                       		<img src="{{ z_media_url($data->front_image, 'blog') }}" width="130px">
                                        </td>
                                         <td><?php
 
-                                            $date = $data->date; 
+                                            $date = $data->date;
 
                                             $date=date_create($date);
 											echo date_format($date,"d/m/Y");
 
-                                            ?> 	
+                                            ?>
                                         </td>
                                         <td>{{$data->heading}}</td>
                                         <td>
@@ -78,15 +78,15 @@
                                                 echo $description = Str::words($des, '20');
                                             ?>... <a href="{{route('blogSeeMore',$data->blog_id)}}">see more</a>
                                         </td>
-                                      
-                                        
 
-                                       
+
+
+
                                         <td class="text-center">
                                            <a href="{{route('blogUpdate',$data->blog_id)}}"><span class="basic_table_icon" style="font-size: 20px;color: green;"><i class="fa fa-pencil" aria-hidden="true"></i></span></a>
 
 
-                                            <a href="{{route('blogDelete',$data->blog_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a> 
+                                            <a href="{{route('blogDelete',$data->blog_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                         </td>
                                     </tr>
                                     @php $i++ @endphp
@@ -99,5 +99,5 @@
             </div>
         </div>
     </main>
- 
+
    @stop

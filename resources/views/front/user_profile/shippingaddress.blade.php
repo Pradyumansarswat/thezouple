@@ -209,7 +209,7 @@
                     </div>
                     <div class="form-group">
                         <label for="City">LandMark</label>
-                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" required name="landmark">
+                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" name="landmark">
                     </div>
 
                     <div class="row">
@@ -292,7 +292,7 @@
                     </div>
                     <div class="form-group">
                         <label for="City">LandMark</label>
-                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark" required>
+                        <input type="text" placeholder="Enter your nearest Landmark" class="form-control" id="landmark" name="landmark">
                     </div>
 
                     <div class="row">

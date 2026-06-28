@@ -36,7 +36,7 @@
         @if($i % 2 == 0)
         <div class="row my-5">
             <div class="col-sm-6">
-            <img src="{{URL::asset('public/upload/about/'.$data->image)}}" width="100%">
+            <img src="{{ z_media_url($data->image, 'about') }}" width="100%">
             </div>
             <div class="col-sm-6">
                 <div style="font-size: 18px!important;background-color:black; color:white; " class="m-0 pt-2 pb-1 px-3">{{$data->title}}</div><br>
@@ -52,7 +52,7 @@
                 <div> <?php echo $data->description; ?></div>
             </div>
             <div class="col-sm-6">
-                <img src="{{URL::asset('public/upload/about/'.$data->image)}}" width="100%">
+                <img src="{{ z_media_url($data->image, 'about') }}" width="100%">
             </div>
 
         </div>

@@ -7,8 +7,11 @@ use App\Http\Controllers\Controller;
 
 use Auth,Redirect,View,File,Config,Image;
 use App\Slider;
+use App\Services\AdminRecycleBinService;
+use App\Services\AdminMediaService;
 use Validator;
 use DB;
+use Schema;
 
 
 class SliderController extends Controller
@@ -39,13 +42,11 @@ class SliderController extends Controller
        
       if($request->file('image')!='')
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/slider/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'sliders', 'slider');
+          $input['image']= $upload['path'];
+          if (Schema::hasColumn('sliders', 'image_public_id')) {
+              $input['image_public_id'] = $upload['public_id'];
+          }
          
       } 
       
@@ -79,11 +80,8 @@ class SliderController extends Controller
     
   public function sliderDelete(Request $request,$id)
   {
-      $data=DB::table('sliders')->where('slider_id','=',$id)->value('image');
-      $fullpath=public_path('upload/slider/').$data;
-      File::delete($fullpath);
-      $m = Slider::where('slider_id','=',$id)->delete();
-      $request->session()->flash('alert-success','Slider image has been sucessfully deleted.');
+      AdminRecycleBinService::softDelete('sliders', $id);
+      $request->session()->flash('alert-success','Slider moved to Recycle Bin.');
       return Redirect::route('slider_mange');
   }
     
@@ -101,16 +99,15 @@ class SliderController extends Controller
       if($request->file('image')!='')
       {
           $data=DB::table('sliders')->where('slider_id','=',$slider_id)->value('image');
-          $fullpath=public_path('upload/slider/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/slider/');       
-          $request->file('image')->move($destinationPath, $imgname);
+          $publicId = Schema::hasColumn('sliders', 'image_public_id')
+              ? DB::table('sliders')->where('slider_id', $slider_id)->value('image_public_id')
+              : null;
+          app(AdminMediaService::class)->deleteMedia($data, 'slider', $publicId, 'image');
+          $upload = app(AdminMediaService::class)->uploadImage($request->file('image'), 'sliders', 'slider');
+          $input['image']= $upload['path'];
+          if (Schema::hasColumn('sliders', 'image_public_id')) {
+              $input['image_public_id'] = $upload['public_id'];
+          }
 
       } 
       else

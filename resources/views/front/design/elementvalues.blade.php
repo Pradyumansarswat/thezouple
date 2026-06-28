@@ -141,7 +141,7 @@ if(count($element_show_data)+1 == $current)
 
 
                         <div class="card-body cardDesign p-0 position-relative">
-                            <img src="{{URL::asset('public/upload/shirt/'.$element->image)}}" width="100%">
+                            <img src="{{ z_media_url($element->image, 'shirt') }}" width="100%">
 
 
                             <?php
@@ -176,7 +176,7 @@ if(count($element_show_data)+1 == $current)
                 <div class="row">
                     @foreach($size_img as $ims)
                     <div class="col-sm-12">
-                        <img src="{{URL::asset('public/upload/shirt/'.$ims->image)}}" width="100%">
+                        <img src="{{ z_media_url($ims->image, 'shirt') }}" width="100%">
                     </div>
                     @endforeach
                 </div>

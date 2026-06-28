@@ -196,7 +196,7 @@ const PasswordUtil = {
                 hint.style.display = '';
                 hint.classList.remove('invalid');
                 hint.classList.add('valid');
-                hint.textContent = 'Password meets all requirements.';
+                hint.textContent = '\u2713 Password meets all requirements.';
                 return;
             }
 
@@ -301,18 +301,12 @@ const PasswordUtil = {
             if (!form) {
                 return;
             }
-            const isCustomerForm = form.closest('#logSign') || form.action && (
-                form.action.indexOf('registration') !== -1 ||
-                form.action.indexOf('userlogin') !== -1 ||
-                form.action.indexOf('update_pass') !== -1 ||
-                form.action.indexOf('passwordUpdate') !== -1 ||
-                form.action.indexOf('forgotpassword') !== -1
-            );
-            if (isCustomerForm) {
-                field.classList.add('password-field');
-                const selector = self.getFieldSelector(field);
-                if (selector) {
-                    self.initTogglePassword(selector);
+            field.classList.add('password-field');
+            const selector = self.getFieldSelector(field);
+            if (selector) {
+                self.initTogglePassword(selector);
+                if (field.name === 'password' || field.name === 'newpassword') {
+                    self.initPasswordValidation(selector);
                 }
             }
         });

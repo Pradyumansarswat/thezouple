@@ -18,21 +18,18 @@ class AuthAdmin
      */
     public function handle($request, Closure $next)
     {
-       if (Auth::guest()){
-            return Redirect::to('masterAdmin/login');
-        }else{
-            if (Auth::check() && Auth::user()->user_role == 'FRONT') {
-               if(Auth::user()->user_role == 'FRONT'){
-                   return Redirect::to('dashboard');
-               }else {
-                   Auth::logout();
-                   return Redirect::to('masterAdmin/login');
-               }
-            } else {
-                return $next($request);
-            }
-
-
+       if (Auth::guard('admin')->guest()){
+            return Redirect::route('admin.login');
         }
+
+        $admin = Auth::guard('admin')->user();
+        if (!$admin || $admin->user_role !== 'ADMIN' || $admin->is_active !== 'ACTIVE') {
+            Auth::guard('admin')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return Redirect::route('admin.login');
+        }
+
+        return $next($request);
     }
 }

@@ -38,9 +38,11 @@ class AddZoupleEnhancements extends Migration
      */
     public function down()
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('amazon_link');
-        });
+        if (Schema::hasTable('products') && Schema::hasColumn('products', 'amazon_link')) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->dropColumn('amazon_link');
+            });
+        }
         Schema::dropIfExists('recycle_bin');
     }
 }

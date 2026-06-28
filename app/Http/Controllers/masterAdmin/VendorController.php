@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use DB;
 use App\Vendor;
 use Auth,Redirect,route,Session,View,Validator,Config,Hash;
+use App\Services\AdminRecycleBinService;
 
 class VendorController extends Controller
 {
@@ -52,8 +53,8 @@ class VendorController extends Controller
 
      public function vendorDeleteformat(Request $request,$vendor_id)
         {
-            $m = Vendor::where('vendor_id','=', $vendor_id)->delete();
-            $request->session()->flash('alert-success','Vendor has been sucessfully deleted.');
+            AdminRecycleBinService::softDelete('vendors', $vendor_id);
+            $request->session()->flash('alert-success','Vendor moved to Recycle Bin.');
             return Redirect::route('vendor');
         }
 }

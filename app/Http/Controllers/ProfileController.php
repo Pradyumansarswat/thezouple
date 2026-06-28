@@ -9,6 +9,7 @@ use DB;
 use Mail;
 use App\User;
 use App\Product;
+use App\Services\AdminRecycleBinService;
 
 class ProfileController extends Controller
 {
@@ -18,7 +19,7 @@ class ProfileController extends Controller
         
         $user_id = Auth::user()->id;
         
-        $data['user_data'] = DB::table('users')->where('id', $user_id)->get();
+        $data['user_data'] = AdminRecycleBinService::activeTable('users')->where('id', $user_id)->get();
         
         return view('front.user_profile.dashboard',compact('page_title'),$data); 
     }
@@ -31,7 +32,7 @@ class ProfileController extends Controller
 
             $this->validate($request , array
              (    
-                 'password' =>'min:6',
+                 'password' => 'required|string|min:8|confirmed|regex:/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/',
                  'password_confirmation' => 'required_with:password|same:password'
              ));  
           if((Hash::check($old_password , $old_pass)))
@@ -57,9 +58,9 @@ class ProfileController extends Controller
     {
         $user_id = Auth::user()->id;
         
-        $data['orderData'] = DB::table('order_system')->where('user_report',null)->where('user_id', $user_id)->orderBy('order_id','desc')->paginate(2);
+        $data['orderData'] = AdminRecycleBinService::activeTable('order_system')->where('user_report',null)->where('user_id', $user_id)->orderBy('order_id','desc')->paginate(2);
         
-        $order_data = DB::table('order_system')->where('user_report',null)->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('user_report',null)->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
 
         $page_title = "Order List - Zouple";
 
@@ -91,9 +92,9 @@ class ProfileController extends Controller
     {
         $user_id = Auth::user()->id;
         
-        $data['cancleData'] = DB::table('order_system')->where('user_report','CANCEL ORDER')->where('user_id', $user_id)->orderBy('order_id','desc')->paginate(2);
+        $data['cancleData'] = AdminRecycleBinService::activeTable('order_system')->where('user_report','CANCEL ORDER')->where('user_id', $user_id)->orderBy('order_id','desc')->paginate(2);
         
-        $order_data = DB::table('order_system')->where('user_report','CANCEL ORDER')->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('user_report','CANCEL ORDER')->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
         
         $page_title = "Cancel Order List - The Zouple";
         
@@ -122,8 +123,8 @@ class ProfileController extends Controller
     public function userReturnOrderList(Request $request)
     {
         $user_id = Auth::user()->id;
-        $data['returnData'] = DB::table('order_system')->where('user_report','RETURN ORDER')->where('user_id',$user_id)->orderBy('order_id','desc')->paginate(2);
-        $order_data = DB::table('order_system')->where('user_report','RETURN ORDER')->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
+        $data['returnData'] = AdminRecycleBinService::activeTable('order_system')->where('user_report','RETURN ORDER')->where('user_id',$user_id)->orderBy('order_id','desc')->paginate(2);
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('user_report','RETURN ORDER')->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
         $page_title = "Return Order - Zouple";
         if(!$order_data->isEmpty())
         {
@@ -150,9 +151,9 @@ class ProfileController extends Controller
     public function userExchangeOrderList(Request $request)
     {
         $user_id = Auth::user()->id;
-        $data['cancleData'] = DB::table('order_system')->where('user_report','EXCHANGE ORDER')->where('user_id',Auth::user()->id)->orderBy('order_id','desc')->paginate(2);
+        $data['cancleData'] = AdminRecycleBinService::activeTable('order_system')->where('user_report','EXCHANGE ORDER')->where('user_id',Auth::user()->id)->orderBy('order_id','desc')->paginate(2);
         $page_title = "Exchange Order - Zouple";
-        $order_data = DB::table('order_system')->where('user_report','EXCHANGE ORDER')->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('user_report','EXCHANGE ORDER')->where('user_id', $user_id)->where('order_type','!=','DESIGN-SHIRT')->orderBy('order_id','desc')->get();
         if(!$order_data->isEmpty())
         {
             foreach($order_data as $ass)
@@ -288,7 +289,7 @@ class ProfileController extends Controller
 
 
                              <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                                 In case of any questions please write to us at contact@thezouple.com and we will revert to you as soon as we receive your email. <br><br>
+                                 In case of any questions please write to us at contact@zouple.in and we will revert to you as soon as we receive your email. <br><br>
                              Thank You,<br>
                              The Zouple  
                              </div>
@@ -373,7 +374,7 @@ class ProfileController extends Controller
                            
                             <br>
                              
-                             <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>Apologies for any inconvenience caused. In order to process your return, we request you to mail below mentioned details to us at order@thezouple.com and we will get back to you at the earliest.</div><br>
+                             <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>Apologies for any inconvenience caused. In order to process your return, we request you to mail below mentioned details to us at order@zouple.in and we will get back to you at the earliest.</div><br>
 
                              <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
                              Order no. -  <br>
@@ -396,7 +397,7 @@ class ProfileController extends Controller
 
 
                              <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                                 In case of any questions please write to us at contact@thezouple.com and we will revert to you as soon as we receive your email. <br><br>
+                                 In case of any questions please write to us at contact@zouple.in and we will revert to you as soon as we receive your email. <br><br>
                              Thank You,<br>
                             The Zouple  
                              </div>
@@ -482,7 +483,7 @@ class ProfileController extends Controller
                            
                             <br>
                              
-                             <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>Apologies for any inconvenience caused. In order to process your return, we request you to mail below mentioned details to us at order@thezouple.com and we will get back to you at the earliest.</div><br>
+                             <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>Apologies for any inconvenience caused. In order to process your return, we request you to mail below mentioned details to us at order@zouple.in and we will get back to you at the earliest.</div><br>
 
                              <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
                              Order no. -  <br>
@@ -505,7 +506,7 @@ class ProfileController extends Controller
 
 
                              <div style='font-weight: normal; margin-bottom:5px; text-align: left; color:#969696; font-size: 16px;'>
-                                 In case of any questions please write to us at contact@thezouple.com and we will revert to you as soon as we receive your email. <br><br>
+                                 In case of any questions please write to us at contact@zouple.in and we will revert to you as soon as we receive your email. <br><br>
                              Thank You,<br>
                              The Zouple 
                              </div>
@@ -561,12 +562,13 @@ class ProfileController extends Controller
     
     public function showcustomerInvoice(Request $request,$order_number)
     {
-         $data['order_data'] =  DB::table('order_system')
+         $data['order_data'] =  AdminRecycleBinService::activeTable('order_system')
             ->join('users','users.id','order_system.user_id')
+             ->whereNull('users.deleted_at')
              ->where('order_number',$order_number)
             ->get();
         
-        $order_data = DB::table('order_system')->where('order_number',$order_number)->where('order_type','!=','DESIGN-SHIRT')->get();
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('order_number',$order_number)->where('order_type','!=','DESIGN-SHIRT')->get();
         foreach($order_data as $as)
         {
             $proq = json_decode($as->product_details);
@@ -591,12 +593,13 @@ class ProfileController extends Controller
     
     public function customerMailInvoice(Request $request,$order_number)
     {
-         $data['order_data'] =  DB::table('order_system')
+         $data['order_data'] =  AdminRecycleBinService::activeTable('order_system')
             ->join('users','users.id','order_system.user_id')
+             ->whereNull('users.deleted_at')
              ->where('order_number',$order_number)
             ->get();
         
-        $order_data = DB::table('order_system')->where('order_number',$order_number)->where('order_type','!=','DESIGN-SHIRT')->get();
+        $order_data = AdminRecycleBinService::activeTable('order_system')->where('order_number',$order_number)->where('order_type','!=','DESIGN-SHIRT')->get();
         foreach($order_data as $as)
         {
             $proq = json_decode($as->product_details);

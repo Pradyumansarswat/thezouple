@@ -41,16 +41,9 @@
 </script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
-
-
-
-
-
 <!--================   menu bar ================-->
 
 <header class="fixed-top fixedTopMenu text-white">
-
-
 
     <div class="container-fluid px-5  py-2 pb-3">
         <div class="row maxWidhtContainer">
@@ -59,62 +52,41 @@
                     <i class="fa fa-bars d-block m-0 pb-1"></i>
                     <span style="font-size: 12px;">Menu</span>
                 </div>
-                <!--<div class="align-self-center d-none d-md-block text-center">
-                    <a href="{{url('designShirt')}}" class="text-white mx-4  ">Design Shirt</a>
-                </div>-->
             </div>
 
             <div class="col-5 logoContent col-md-4 align-self-center ">
-
                 <a href="{{url('/')}}"><img src="{{URL::asset('public/front/images/logo.png')}}" width="100px"></a>
             </div>
 
             <div class="col-5 cartContent col-md-4 d-flex justify-content-end">
-
-                <!--<div class="mx-1 btn btnSm align-self-center text-center" style="line-height: 10px;">
-                    <select class="form-control" id="currency" name="currency" onchange="currency(this);">
-                        <?php 
-                        $currencySession = Session::get('currency');
-                        ?>
-                        <option value="rupee_price" {{$currencySession == "rupee_price"? "selected" : " "}}>₹</option>
-                        <option value="dollar_price" {{$currencySession == "dollar_price"? "selected" : " "}}>$</option>
-                        <option value="euro_price" {{$currencySession == "euro_price"? "selected" : " "}}>€</option>
-                    </select>
-                </div>-->
 
                 <div class="mx-1 btn btnSm searchBtn align-self-center text-center" style="line-height: 10px;">
                     <i class="fa fa-search d-block m-0 pb-1"></i>
                     <span style="font-size: 12px;">Search</span>
                 </div>
 
-
                 <div class="mx-1 btn btnSm align-self-center " style="line-height: 10px; text-align:left!important">
                     <a href="{{url('cart')}}" class="text-white">
-                        <i class="fa fa-shopping-bag d-block m-0 pb-1"><sup class="pl-1">{{$cart_item}}</sup></i>
+                        <i class="fa fa-shopping-bag d-block m-0 pb-1"><sup class="pl-1 js-cart-count">{{ $cart_item ?? 0 }}</sup></i>
                         <span style="font-size: 12px;">Cart</span>
                     </a>
-
                 </div>
-
-
 
                 @if(isset(Auth::user()->id))
                 <div class="mx-1 btn btnSm align-self-center text-center" style="line-height: 10px;">
                     <a href="{{url('wishlist')}}" class="text-white">
-                        <i class="fa fa-heart-o d-block m-0 pb-1"><sup class="pl-1">{{$wish_item}}</sup></i>
+                        <i class="fa fa-heart-o d-block m-0 pb-1"><sup class="pl-1 js-wishlist-count">{{ $wish_item ?? 0 }}</sup></i>
                         <span style="font-size: 12px;">Wishlist</span>
                     </a>
-
                 </div>
                 @else
 
                 <div class="mx-1 btn btnSm align-self-center text-center" data-target="#logSign" data-toggle="modal" style="line-height: 10px;">
-                    <i class="fa fa-heart-o d-block m-0 pb-1"><sup class="pl-1">{{$wish_item}}</sup></i>
+                    <i class="fa fa-heart-o d-block m-0 pb-1"><sup class="pl-1 js-wishlist-count">{{ $wish_item ?? 0 }}</sup></i>
                     <span style="font-size: 12px;">Wishlist</span>
                 </div>
 
                 @endif
-
 
                 @if(isset(Auth::user()->id))
                 <div class="mx-1 align-self-center  btn btnSm text-center userBtn" style="line-height: 10px;">
@@ -122,13 +94,9 @@
                     <span style="font-size: 12px;">
                         <?php 
                               $name = Auth::user()->name;
-                              
                               $user_name = explode(" ", $name);
-                              
                               echo $user_name[0];
                        ?>
-
-
                     </span>
                 </div>
 
@@ -141,8 +109,6 @@
             </div>
 
         </div>
-
-
     </div>
 
 </header>
@@ -165,14 +131,11 @@
                         <li><a href="{{url('/')}}" class="text-white">HOME</a></li>
                         <li><a href="{{url('about')}}" class="text-white">ABOUT US</a></li>
                         <li><a href="{{url('designShirt')}}" class="text-white">MEN`S SHIRT CUSTOMIZATION</a></li>
-                        @foreach($categories as $category)
+                        @foreach($categories ?? [] as $category)
                         @if($category->is_active == "ACTIVE")
                         @if(count($category->childs))
 
                         <li data-toggle="collapse" href="#{{$category->slug}}" aria-expanded="false" aria-controls="menuDown" class="text-white collapseHead">
-
-
-
                             <div class="d-flex justify-content-between"><a class="text-white">{{$category->title}}</a><i class="fa fa-sort-desc align-self-center p-0"></i></div>
 
                             <?php $childs = $category->childs; ?>
@@ -182,11 +145,7 @@
                                 <div><a href="{{url('category',$child->slug)}}" class="text-white d-inline-block py-1 h6 m-0 h-100"><i class="fa fa-caret-right" style="margin-right:-22px;" aria-hidden="true" ></i> {{$child->title}}</a></div>
                                 @endif
                                 @endforeach
-
-
                             </div>
-
-
 
                         </li>
                         @else
@@ -196,7 +155,6 @@
                         @endif
                         @endforeach
 
-
                         <li><a href="{{url('blog')}}" class="text-white">BLOGS</a></li>
                         <li><a href="{{url('contact')}}" class="text-white">CONTACT US</a></li>
 
@@ -204,27 +162,21 @@
 
                 </div>
 
-
                 <div class="pt-5 pb-3" style=" background-color:black;">
-                    @foreach($siteinformation as $contact)
+                    @foreach($siteinformation ?? [] as $contact)
                     <ul class="list-unstyled d-flex justify-content-center text-center m-auto">
                         <li><a href="{{$contact->facebook_url}}" target="_blank" class='text-white px-2'><i class="fa fa-facebook "></i></a></li>
-                        <!--<li><a href="{{$contact->twitter_url}}" target="_blank" class='text-white px-2'><i class="fa fa-twitter "></i></a></li>-->
                         <li><a href="{{$contact->instagram_url}}" target="_blank" class='text-white px-2'><i class="fa fa-instagram "></i></a></li>
                         <li><a href="{{$contact->pinterest}}" target="_blank" class='text-white px-2'><i class="fa fa-pinterest "></i></a></li>
                         <li><a href="{{$contact->youtube}}" target="_blank" class='text-white px-2'><i class="fa fa-youtube-play "></i></a></li>
-
                     </ul>
                     @endforeach
 
                 </div>
 
-
-
             </div>
             <div class="col-12 col-lg-8 d-none closeBtn d-lg-block" style=""></div>
         </div>
-
 
     </div>
 </div>
@@ -253,7 +205,6 @@
                         <li><a href="{{url('yourOrder')}}" class='text-white'><i class="fa fa-shopping-bag"></i>ORDERS</a></li>
                         <li><a href="{{url('cancleOrder')}}" class='text-white'><i class="fa fa-times"></i>CANCEL ADDRESS</a></li>
                         <li><a href="{{url('returnOrder')}}" class='text-white'><i class="fa fa-retweet"></i>RETURN ORDERS</a></li>
-                        <!--<li><a href="{{url('exchangeOrder')}}" class='text-white'><i class="fa fa-retweet"></i>EXCHANGE ORDERS</a></li>-->
                         <li><a href="{{url('wishlist')}}" class='text-white'><i class="fa fa-heart"></i>WISHLIST</a></li>
 
                         <li><a href="{{url('shippingAddress')}}" class='text-white'><i class="fa fa-map-marker"></i>SHIPPING ORDERS</a></li>
@@ -264,21 +215,13 @@
 
                 </div>
 
-
-
-
-
-
-
             </div>
 
         </div>
 
-
     </div>
 
 </div>
-
 
 <!--======================  search panel ==================-->
 
@@ -296,7 +239,6 @@
         </div>
     </div>
 </div>
-
 
 <!--======================  Alert Example Box ==================-->
 <style>
@@ -362,10 +304,8 @@
                     <div class="col-sm-2 m-0 p-0">
                         <button type="submit" class="btn btn-danger"><i class="fa fa-check-circle-o" aria-hidden="true"></i> Send</button>
                     </div>
-                    </form>
+                </form>
             </div>
-
-            
         </div>
     </div>
 </div>

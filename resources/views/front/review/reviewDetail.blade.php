@@ -36,7 +36,7 @@
             @if($userImageProfile == "")
             <h6>No Image Found </h6>
             @else
-            <img src="{{URL::asset('public/upload/review/'.$data->user_profile)}}" width="50px" height="50px" class="rounded-circle border">
+            <img src="{{ z_media_url($data->user_profile, 'review') }}" width="50px" height="50px" class="rounded-circle border">
             @endif
         </div>
         <div class="col-sm-11">
@@ -69,7 +69,7 @@
                     <h6>No Image Found </h6>
                     @else
                     @foreach($imgs as $vals)
-                    <img src="{{URL::asset('public/upload/review/'.$vals)}}" width="50px" height="50px">
+                    <img src="{{ z_media_url($vals, 'review') }}" width="50px" height="50px">
                     @endforeach
                     @endif
                 </div>

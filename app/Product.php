@@ -3,9 +3,12 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
+    use SoftDeletes;
+
      protected $primaryKey = 'product_id';
     protected $table = 'products';
     protected $fillable = [
@@ -25,12 +28,18 @@ class Product extends Model
         'product_description',
         'product_specification',
         'product_addition_information',
+        'amazon_link',
         'is_active',
         'in_stock'
             ];
     protected $hidden = [
         '_token',
     ];
+
+    public function galleryImages()
+    {
+        return $this->hasMany(ProductGalleryImage::class, 'product_id', 'product_id')->orderBy('sort_order', 'asc');
+    }
     
     
     

@@ -18,11 +18,10 @@ class GuestAdmin
      */
     public function handle($request, Closure $next)
     {
-        if(Auth::check() && Auth::user()->user_role=='FRONT'){
-            Auth::logout();
-            return Redirect::to('masterAdmin/login');
-        }else{
-            return $next($request);
+        if(Auth::guard('admin')->check()){
+            return Redirect::route('admin.dashboard');
         }
+
+        return $next($request);
     }
 }

@@ -67,7 +67,7 @@
                 <div class="item px-2 ">
                     <a href="{{url('categories',$data->slug)}}" class="text-dark">
                         <div class="cards cardCat cards--two">
-                            <img src="{{URL::asset('public/upload/category/'.$data->image)}}" class="img-responsive" alt="Cards Image" width="100%">
+                            <img src="{{ z_media_url($data->image, 'category') }}" class="img-responsive" alt="Cards Image" width="100%">
                             <span class="cards--two__rect cards--two__rect__Cat"></span>
                             <p>{{$data->title}}</p>
 
@@ -140,7 +140,7 @@
                     <a href="{{url('productShow', $arrivals->slug)}}">
                         <div class="card cusCard" style="border-radius: 15px; overflow: hidden;">
                             <div class="card-body p-0 position-relative">
-                                <img src="{{URL::asset('public/upload/product/'.$arrivals->product_header_image)}}" width="100%">
+                                <img src="{{ z_media_url($arrivals->product_header_image, 'product') }}" width="100%">
 
 
                                 <ul class="cards__list">
@@ -279,7 +279,7 @@
                     <a href="#">
                         <div class="card cusCard" style="border-radius: 15px; overflow: hidden;">
                             <div class="card-body p-0 position-relative">
-                                <img src="{{URL::asset('public/upload/product/'.$feature->product_header_image)}}" width="100%">
+                                <img src="{{ z_media_url($feature->product_header_image, 'product') }}" width="100%">
 
 
                                 <ul class="cards__list">
@@ -437,7 +437,7 @@
         <div class="col-md-6  pb-5">
             <div class="blog-card row mx-0">
                 <div class="meta col-12 col-md-6">
-                    <div class="photo" style="background-image: url({{URL::asset('public/upload/blog/'.$blog->image)}}); height:300px;"></div>
+                    <div class="photo" style="background-image: url({{ z_media_url($blog->image, 'blog') }}); height:300px;"></div>
                     <ul class="details list-unstyled">
                         <li class="author py-2"><a href="#">{{$blog->heading}}</a></li>
                         <li class="date py-2">

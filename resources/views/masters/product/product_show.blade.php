@@ -11,7 +11,7 @@
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -73,7 +73,16 @@
                             <div class="col-sm-6 mt-2">
                                 <div class="form-group">
                                     <b><label class="control-label"> Product Header Image<span class="text-danger"><b> (400*400 Pixel) : </b></span></label></b><br>
-                                    <img src="{{URL::asset('public/upload/product/'.$show->product_header_image)}}" width="130px"></td>
+                                    @php
+                                        $productHeaderImage = trim((string) $show->product_header_image);
+                                        $hasProductHeaderImage = z_media_exists($productHeaderImage, 'product');
+                                    @endphp
+                                    @if($hasProductHeaderImage)
+                                        <img src="{{ z_media_url($productHeaderImage, 'product') }}" class="admin-product-thumb" alt="{{ $show->product_title }}">
+                                    @else
+                                        <div class="admin-product-placeholder">{{ strtoupper(substr(trim($show->product_title ?: 'P'), 0, 1)) }}</div>
+                                    @endif
+                                    </td>
                                     
                                 </div>
                             </div>  
@@ -83,11 +92,22 @@
                                     
                                     <?php
                                     
-                                    $imgs = json_decode($show->product_images);
+                                    $imgs = $product_gallery_images[$show->product_id] ?? json_decode($show->product_images, true);
+                                    $imgs = is_array($imgs) ? $imgs : [];
                                     ?>
-                                    @foreach($imgs as $val)
-                                    <img src="{{URL::asset('public/upload/product/'.$val)}}" width="130px">
-                                    @endforeach
+                                    @forelse($imgs as $val)
+                                        @php
+                                            $galleryImage = trim((string) $val);
+                                            $hasGalleryImage = z_media_exists($galleryImage, 'product');
+                                        @endphp
+                                        @if($hasGalleryImage)
+                                            <img src="{{ z_media_url($galleryImage, 'product') }}" class="admin-product-thumb" alt="{{ $show->product_title }}">
+                                        @else
+                                            <div class="admin-product-placeholder">{{ strtoupper(substr(trim($show->product_title ?: 'P'), 0, 1)) }}</div>
+                                        @endif
+                                    @empty
+                                        <div class="admin-product-placeholder">{{ strtoupper(substr(trim($show->product_title ?: 'P'), 0, 1)) }}</div>
+                                    @endforelse
                                 </div>
                             </div> 
                             

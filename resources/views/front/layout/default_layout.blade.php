@@ -4,28 +4,74 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="
-       @if(isset($meta_description))
-       {{$meta_description}}
-       @else
-       {{META_DESCIPTION}}
-       @endif
-    ">
-    <meta name="keywords" content="
-        @if(isset($meta_keyword))
-       {{$meta_keyword}}
-       @else
-       {{META_KEYWORD}}
-       @endif
-    ">
+    @php
+        $seoTitle = isset($page_title) && trim($page_title) !== '' ? trim($page_title) : 'Zouple | Premium Signage, Name Plates and Custom Signs';
+        $seoDescription = isset($meta_description) && trim($meta_description) !== '' ? trim($meta_description) : 'Shop Zouple stainless steel signage, acrylic signs, name plates, flat number plates, office signs, washroom signs, CCTV signs, beware of dog signs, and custom address signage.';
+        $seoKeywords = isset($meta_keyword) && trim($meta_keyword) !== '' ? trim($meta_keyword) : 'Zouple, signage, name plates, stainless steel signs, acrylic signs, custom signs, office signs, flat number plates, CCTV signs, beware of dog signs';
+        $seoUrl = url()->current();
+        $seoImage = URL::asset('public/img/dark-logo.png');
+        $robotsContent = request()->is('masterAdmin*') ? 'noindex,nofollow' : 'index,follow,max-image-preview:large';
+        $organizationSchema = array(
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => 'Zouple',
+            'url' => url('/'),
+            'logo' => $seoImage,
+        );
+        $websiteSchema = array(
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => 'Zouple',
+            'url' => url('/'),
+            'potentialAction' => array(
+                '@type' => 'SearchAction',
+                'target' => url('searchData') . '?search={search_term_string}',
+                'query-input' => 'required name=search_term_string',
+            ),
+        );
+        $schemaProduct = null;
+        if (isset($products_show) && is_object($products_show) && method_exists($products_show, 'first') && $products_show->count() > 0) {
+            $schemaProductData = $products_show->first();
+            $schemaProductPrice = isset($schemaProductData->rupee_net_with_gst) && (float) $schemaProductData->rupee_net_with_gst > 0
+                ? (float) $schemaProductData->rupee_net_with_gst
+                : (isset($schemaProductData->rupee_price) ? (float) $schemaProductData->rupee_price : 0);
+            $schemaProductImage = isset($schemaProductData->product_image) ? z_optimized_media_url($schemaProductData->product_image, 'products') : $seoImage;
+            $schemaProduct = array(
+                '@context' => 'https://schema.org',
+                '@type' => 'Product',
+                'name' => isset($schemaProductData->product_title) ? $schemaProductData->product_title : $seoTitle,
+                'image' => $schemaProductImage,
+                'description' => $seoDescription,
+                'sku' => isset($schemaProductData->sku) ? $schemaProductData->sku : '',
+                'brand' => array('@type' => 'Brand', 'name' => 'Zouple'),
+                'offers' => array(
+                    '@type' => 'Offer',
+                    'priceCurrency' => 'INR',
+                    'price' => $schemaProductPrice,
+                    'availability' => (isset($schemaProductData->in_stock) && $schemaProductData->in_stock === 'IN_STOCK') ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                    'url' => $seoUrl,
+                ),
+            );
+        }
+    @endphp
+    <meta name="description" content="{{ $seoDescription }}">
+    <meta name="keywords" content="{{ $seoKeywords }}">
+    <meta name="robots" content="{{ $robotsContent }}">
     <meta name="author" content="PROFTCODE IT INDUSTRIES">
+    <link rel="canonical" href="{{ $seoUrl }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $seoTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:image" content="{{ $seoImage }}">
+    <meta property="og:url" content="{{ $seoUrl }}">
+    <meta property="og:site_name" content="Zouple">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seoTitle }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
+    <meta name="twitter:image" content="{{ $seoImage }}">
 
 
-    <title>@if(isset($page_title))
-        {{$page_title}}
-        @else
-        {{PAGETITLE}}
-        @endif</title>
+    <title>{{ $seoTitle }}</title>
 
     <!--====================   custom css ===================-->
 
@@ -36,7 +82,10 @@
 
 
     <!--=======================  cdn files ====================-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css?family=Jura:700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -45,6 +94,8 @@
     <link rel="stylesheet" href="{{URL::asset('public/front/css/magiczoomplus.css')}}">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+    <link href="{{URL::asset('public/front/css/zouple-luxury.css')}}?v=20260628-fix2" rel="stylesheet">
     
     <link href="https://fonts.googleapis.com/css?family=PT+Sans&display=swap" rel="stylesheet">
     <!--===============================================================================================-->
@@ -103,6 +154,11 @@
     <!-- End Google Tag Manager -->
 
     <!-- End For SEO -->
+    <script type="application/ld+json">{!! json_encode($organizationSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    <script type="application/ld+json">{!! json_encode($websiteSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @if($schemaProduct)
+    <script type="application/ld+json">{!! json_encode($schemaProduct, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endif
 
     <style>
         /* Center the loader */
@@ -193,12 +249,6 @@
 
     </style>
 
-
-
-
-
-
-
 </head>
 
 <body onload="myFunction()" style="margin:0;">
@@ -210,11 +260,6 @@
     
 
     <!--  Time Popup Code End  -->
-
-
-
-
-
 
 
     <!-- FOR SEO -->
@@ -243,14 +288,14 @@
 
         <script>
             function chanageImage() {
-                $('#imageStore').html(@foreach($signupbann as $sign)
-                    "<img src='{{URL::asset('public/upload/loginbanner/'.$sign->image)}}' width='100%' height='100%'>"
+                $('#imageStore').html(@foreach(($signupbann ?? []) as $sign)
+                    "<img src='{{ z_media_url($sign->image, 'loginbanner') }}' width='100%' height='100%'>"
                     @endforeach)
             }
 
             function changeImage2() {
-                $('#imageStore').html(@foreach($loginban as $login)
-                    "<img src='{{URL::asset('public/upload/loginbanner/'.$login->image)}}' width='100%' height='100%'>"
+                $('#imageStore').html(@foreach(($loginban ?? []) as $login)
+                    "<img src='{{ z_media_url($login->image, 'loginbanner') }}' width='100%' height='100%'>"
                     @endforeach)
             }
 
@@ -264,7 +309,7 @@
                 <div class="modal-content">
                     <div class="modal-body row  py-0">
                         <div class="col-md-6 d-none d-md-block align-self-center p-0" id="imageStore">
-                            @foreach($loginban as $sign) <img src="{{URL::asset('public/upload/loginbanner/'.$sign->image)}}" width="100%" height="100%"> @endforeach
+                            @foreach(($loginban ?? []) as $sign) <img src="{{ z_media_url($sign->image, 'loginbanner') }}" width="100%" height="100%"> @endforeach
 
                         </div>
                         <div class="col-md-6 login_form">
@@ -386,12 +431,23 @@
         </div>
 
 
+        <footer class="zouple-luxury-footer" itemscope itemtype="https://schema.org/Organization">
 
+            <div class="container-fluid zouple-footer-brand">
+                <div class="row maxWidhtContainer align-items-center py-4">
+                    <div class="col-md-4 py-2">
+                        <a href="{{url('/')}}" aria-label="Zouple home" itemprop="url">
+                            <img src="{{URL::asset('public/img/dark-logo.png')}}" alt="Zouple premium signage" width="140" itemprop="logo">
+                        </a>
+                    </div>
+                    <div class="col-md-8 py-2">
+                        <h2 class="m-0" itemprop="name">Zouple</h2>
+                        <p class="zouple-footer-tagline m-0">Precision-Crafted Premium Signage for Modern Homes, Offices & Commercial Spaces.</p>
+                    </div>
+                </div>
+            </div>
 
-
-        <footer>
-
-            <div style="background-color:black; border-bottom:1px solid white">
+            <div class="zouple-footer-newsletter">
                 <div class="container-fluid">
                     <div class="row maxWidhtContainer">
                         <div class="col-md-6 py-4">
@@ -412,7 +468,7 @@
             </div>
 
 
-            <div class="container-fluid text-white " style="background-color:BLACK;">
+            <div class="container-fluid text-white zouple-footer-links">
                 <div class="row py-2 maxWidhtContainer">
                     <div class="col-sm-6 col-md-3 col-6 py-3 quickLinks">
                         <ul class="list-unstyled">
@@ -460,9 +516,9 @@
                     <div class="col-sm-6 col-md-3 py-3 col-6 quickLinks">
                         <ul class="list-unstyled">
                             <h5 class="m-0 pb-2 footer_head">Follow Us</h5>
-                            @foreach($siteinformation as $contact)
+                            @foreach(($siteinformation ?? []) as $contact)
                             <li class=" pl-3 pt-2">
-                                <a href="{{$contact->facebook_url}}" target="_blank" class="text-white d-flex">
+                                <a href="{{$contact->facebook_url}}" target="_blank" class="text-white d-flex" aria-label="Zouple on Facebook">
                                     <div style="width: 25px;"><i class="fa fa-facebook"></i></div>
                                     <div>Facebook</div>
                                 </a>
@@ -476,20 +532,20 @@
 
                         </li>-->
                             <li class=" pl-3 pt-2">
-                                <a href="{{$contact->instagram_url}}" target="_blank" class="text-white d-flex">
+                                <a href="{{$contact->instagram_url}}" target="_blank" class="text-white d-flex" aria-label="Zouple on Instagram">
                                     <div style="width: 25px;"><i class="fa fa-instagram"></i></div>
                                     <div>Instagram</div>
                                 </a>
                             </li>
                             <li class=" pl-3 pt-2">
-                                <a href="{{$contact->pinterest}}" target="_blank" class="text-white d-flex">
+                                <a href="{{$contact->pinterest}}" target="_blank" class="text-white d-flex" aria-label="Zouple on Pinterest">
                                     <div style="width: 25px;"><i class="fa fa-pinterest"></i></div>
                                     <div>Pinterest</div>
                                 </a>
                             </li>
 
                             <li class=" pl-3 pt-2">
-                                <a href="{{$contact->youtube}}" target="_blank" class="text-white d-flex">
+                                <a href="{{$contact->youtube}}" target="_blank" class="text-white d-flex" aria-label="Zouple on YouTube">
                                     <div style="width: 25px;"><i class="fa fa-youtube-play"></i></div>
                                     <div>Youtube</div>
                                 </a>
@@ -501,7 +557,7 @@
                 </div>
             </div>
 
-            <div class="container-fluid bg-white">
+            <div class="container-fluid zouple-footer-trust">
                 <div class="row maxWidhtContainer">
                     <div class="paymentThro col-md-6 py-3">
                         <div class="h6 m-0 text-dark">WE DELIVER THROUGH</div>
@@ -515,10 +571,10 @@
                 </div>
             </div>
 
-            <div class="container-fluid" style="background-color:black; ">
+            <div class="container-fluid zouple-footer-copy">
                 <div class="row maxWidhtContainer">
                     <div class="col-12 text-center py-2 text-white">
-                        <i class="fa fa-copyright"></i> 2019 - 2020 thezouple.com . All rights reserved
+                        <i class="fa fa-copyright"></i> 2019 - 2026 zouple.in. All rights reserved
 
                     </div>
                 </div>
@@ -540,6 +596,8 @@
 <script src="{{URL::asset('public/front/js/custom-owl.js')}}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script src="{{URL::asset('public/front/js/index.js')}}"></script>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script src="{{URL::asset('public/front/js/zouple-luxury.js')}}"></script>
 
 
 <script type="text/javascript" src="{{URL::asset('public/front/vendor/sweetalert/sweetalert.min.js')}}"></script>
@@ -594,8 +652,6 @@
 
     function myFunction() {
         myVar = setTimeout(showPage, 0);
-        
-       
     }
 
     function showPage() {
@@ -628,10 +684,5 @@
         document.getElementById("alertNoMessage").click();
     }
 </script>
-
-
-
-
-
 
 </html>

@@ -15,9 +15,73 @@ use Session;
 use Mail;
 use Config;
 use PDF;
+use App\Services\AdminRecycleBinService;
 
 class UsersController extends Controller
 {
+    private function attachGuestCartToLoggedInUser(Request $request)
+    {
+        if (!Auth::check()) {
+            return;
+        }
+
+        DB::table('carts')
+            ->where('ip_address', $request->ip())
+            ->where(function ($query) {
+                $query->whereNull('user_id')
+                    ->orWhere('user_id', 0)
+                    ->orWhere('user_id', '');
+            })
+            ->update(['user_id' => Auth::user()->id]);
+    }
+
+    private function normalizeAddressType($type, $fallback = 'Shipping')
+    {
+        $type = trim((string) $type);
+
+        if (stripos($type, 'billing') !== false) {
+            return 'Billing';
+        }
+
+        if (stripos($type, 'shipping') !== false) {
+            return 'Shipping';
+        }
+
+        return $fallback;
+    }
+
+    private function validateAddressRequest(Request $request)
+    {
+        $this->validate($request, [
+            'address_name' => 'required|string|max:255',
+            'mobile' => 'required|string|max:20|regex:/^[0-9+\-\s()]+$/',
+            'address' => 'required|string|max:500',
+            'landmark' => 'nullable|string|max:255',
+            'country' => 'required|string|max:100',
+            'state' => 'required|string|max:100',
+            'city_name' => 'required|string|max:100',
+            'pin' => 'required|string|max:20',
+            'addresstype' => 'nullable|string|max:30',
+        ], [
+            'mobile.regex' => 'Please enter a valid mobile number.',
+        ]);
+    }
+
+    private function addressPayload(Request $request, $addressType)
+    {
+        return [
+            'address_name' => trim((string) $request->address_name),
+            'addresstype' => $addressType,
+            'mobile' => trim((string) $request->mobile),
+            'address' => trim((string) $request->address),
+            'landmark' => trim((string) $request->landmark),
+            'country' => trim((string) $request->country),
+            'state' => trim((string) $request->state),
+            'city_name' => trim((string) $request->city_name),
+            'pin' => trim((string) $request->pin),
+        ];
+    }
+
      /* ------------------------------------- Login Code Start -------------------------- */
     
     public function login(Request $request)
@@ -34,6 +98,7 @@ class UsersController extends Controller
         {
             if(Auth::user()->is_active == 'ACTIVE')
             {
+                $this->attachGuestCartToLoggedInUser($request);
                 return Redirect::back();
             }
             else
@@ -107,6 +172,7 @@ class UsersController extends Controller
         {
             if(Auth::user()->is_active == 'ACTIVE')
             {
+                $this->attachGuestCartToLoggedInUser($request);
                 $request->session()->flash('alert-success','Hurray! Your The Zouple account has been successfully created.');
                 return Redirect::back();
             }
@@ -368,7 +434,7 @@ class UsersController extends Controller
 
         $user_id = Auth::user()->id;
 
-        $data['profiles_shipping_data'] = DB::table('users')->where('id', $user_id)->get();
+        $data['profiles_shipping_data'] = AdminRecycleBinService::activeTable('users')->where('id', $user_id)->get();
 
 
         $data['shipping_address_list'] = DB::table('user_information')
@@ -382,40 +448,50 @@ class UsersController extends Controller
     
     public function shipping_address_order_store(Request $request)
      {
+            $this->validateAddressRequest($request);
 
-            $data['default_address']='NO';
+            $user_id = Auth::user()->id;
+            $addressType = $this->normalizeAddressType($request->addresstype, 'Shipping');
+            $input = $this->addressPayload($request, $addressType);
+            $input['user_id'] = $user_id;
+            $input['default_address'] = 'YES';
 
-            $user_id  = Auth::user()->id;
+            DB::table('user_information')
+                ->where('user_id', $user_id)
+                ->where('addresstype', $addressType)
+                ->update(['default_address' => 'NO']);
 
-            DB::table('user_information')->where('user_id',$user_id)->where('addresstype',$request->addresstype)->update($data);
-
-            $input = $request->all();
-            $input['user_id']=Auth::user()->id;
-            $input['default_address']='YES';
-            $input['addresstype'] = $request->addresstype;
             DB::table('user_information')->insert($input);
-            $request->session()->flash('alert-success','Address has been sucessfully added.');
+            $request->session()->flash('alert-success','Address has been successfully added.');
             return redirect()->back();
 
     }
     
     public function paymentUpdatesStore(Request $request)
     {
+       $this->validateAddressRequest($request);
+       $this->validate($request, [
+            'user_information_id' => 'required|integer',
+       ]);
 
-       
-
-       $input=$request->all();
-       $input['user_id']=Auth::user()->id;
+       $addressType = $this->normalizeAddressType($request->addresstype, 'Shipping');
+       $input = $this->addressPayload($request, $addressType);
        $user_information_id = $request->user_information_id;
 
-       DB::table('user_information')->where('user_information_id',$user_information_id)->update($input); 
+       DB::table('user_information')
+            ->where('user_information_id', $user_information_id)
+            ->where('user_id', Auth::user()->id)
+            ->update($input); 
        $request->session()->flash('alert-success','Address has been successfully Updated.');     
        return redirect()->back();
     }
     
     public function shippingDeleteFormat(Request $request,$user_information_id)
   {
-      $m = DB::table('user_information')->where('user_information_id','=',$user_information_id)->delete();
+      $m = DB::table('user_information')
+            ->where('user_information_id', '=', $user_information_id)
+            ->where('user_id', Auth::user()->id)
+            ->delete();
       $request->session()->flash('alert-success','Address has been successfully deleted.');
       return redirect()->back();
   }
@@ -433,7 +509,7 @@ class UsersController extends Controller
 
         $user_id = Auth::user()->id;
 
-        $data['profiles_shipping_data'] = DB::table('users')->where('id', $user_id)->get();
+        $data['profiles_shipping_data'] = AdminRecycleBinService::activeTable('users')->where('id', $user_id)->get();
 
 
         $data['billing_address_list'] = DB::table('user_information')
@@ -447,40 +523,50 @@ class UsersController extends Controller
     
     public function billing_address_order_store(Request $request)
      {
+            $this->validateAddressRequest($request);
 
-            $data['default_address']='NO';
+            $user_id = Auth::user()->id;
+            $addressType = $this->normalizeAddressType($request->addresstype, 'Billing');
+            $input = $this->addressPayload($request, $addressType);
+            $input['user_id'] = $user_id;
+            $input['default_address'] = 'YES';
 
-            $user_id  = Auth::user()->id;
+            DB::table('user_information')
+                ->where('user_id', $user_id)
+                ->where('addresstype', $addressType)
+                ->update(['default_address' => 'NO']);
 
-            DB::table('user_information')->where('user_id',$user_id)->where('addresstype',$request->addresstype)->update($data);
-
-            $input = $request->all();
-            $input['user_id']=Auth::user()->id;
-            $input['default_address']='YES';
-            $input['addresstype'] = $request->addresstype;
             DB::table('user_information')->insert($input);
-            $request->session()->flash('alert-success','Address has been sucessfully added.');
+            $request->session()->flash('alert-success','Address has been successfully added.');
             return redirect()->back();
 
     }
     
     public function billingpaymentUpdatesStore(Request $request)
     {
+       $this->validateAddressRequest($request);
+       $this->validate($request, [
+            'user_information_id' => 'required|integer',
+       ]);
 
-       
-
-       $input=$request->all();
-       $input['user_id']=Auth::user()->id;
+       $addressType = $this->normalizeAddressType($request->addresstype, 'Billing');
+       $input = $this->addressPayload($request, $addressType);
        $user_information_id = $request->user_information_id;
 
-       DB::table('user_information')->where('user_information_id',$user_information_id)->update($input); 
+       DB::table('user_information')
+            ->where('user_information_id', $user_information_id)
+            ->where('user_id', Auth::user()->id)
+            ->update($input); 
        $request->session()->flash('alert-success','Address has been successfully Updated.');     
        return redirect()->back();
     }
     
     public function billingDeleteFormat(Request $request,$user_information_id)
   {
-      $m = DB::table('user_information')->where('user_information_id','=',$user_information_id)->delete();
+      $m = DB::table('user_information')
+            ->where('user_information_id', '=', $user_information_id)
+            ->where('user_id', Auth::user()->id)
+            ->delete();
       $request->session()->flash('alert-success','Address has been successfully deleted.');
       return redirect()->back();
   }
@@ -518,7 +604,7 @@ class UsersController extends Controller
 
         $user_id = Auth::user()->id;
 
-        $data['profiles_wish_data'] = DB::table('users')->where('id', $user_id)->get();
+        $data['profiles_wish_data'] = AdminRecycleBinService::activeTable('users')->where('id', $user_id)->get();
 
         $data['wishs_lists'] = DB::table('wishlists')->join('products', 'products.product_id', '=', 'wishlists.product_id')->join('product_quantity', 'product_quantity.product_quantity_id', '=', 'wishlists.product_qty_id')->where('wishlists.user_id',Auth::user()->id) ->orderBy('products.product_id', 'asc')->get();
        

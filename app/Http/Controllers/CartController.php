@@ -17,6 +17,34 @@ use App\Category;
 
 class CartController extends Controller
 {
+    private function applyCurrentCartOwner($query, Request $request, $table = 'carts')
+    {
+        $ip = $request->ip();
+
+        if (Auth::check()) {
+            $userId = Auth::user()->id;
+
+            return $query->where(function ($ownerQuery) use ($table, $ip, $userId) {
+                $ownerQuery->where($table . '.user_id', $userId)
+                    ->orWhere(function ($guestQuery) use ($table, $ip) {
+                        $guestQuery->where($table . '.ip_address', $ip)
+                            ->where(function ($emptyUserQuery) use ($table) {
+                                $emptyUserQuery->whereNull($table . '.user_id')
+                                    ->orWhere($table . '.user_id', 0)
+                                    ->orWhere($table . '.user_id', '');
+                            });
+                    });
+            });
+        }
+
+        return $query->where($table . '.ip_address', $ip)
+            ->where(function ($guestQuery) use ($table) {
+                $guestQuery->whereNull($table . '.user_id')
+                    ->orWhere($table . '.user_id', 0)
+                    ->orWhere($table . '.user_id', '');
+            });
+    }
+
     // New Cart List --------
     public function cart_list(Request $request)
     {
@@ -24,36 +52,17 @@ class CartController extends Controller
         
         $CouponCode = "";
         $slug="";
-        $ip = $request->ip();
-        if(isset(Auth::user()->id))
-        
-        {
-        $gst = DB::table('carts')
+        $data['proAttributes'] = [];
+        $gst = $this->applyCurrentCartOwner(DB::table('carts')
                      ->join('products', 'products.product_id', '=', 'carts.product_id')
-                     ->where('carts.ip_address',$ip)
-                     ->orWhere ('carts.user_id', Auth::user()->id)
+                     , $request)
                     ->max('products.product_gst');
                     
-        $data['cart_data'] = DB::table('carts')
+        $data['cart_data'] = $this->applyCurrentCartOwner(DB::table('carts')
              ->join('product_quantity','product_quantity.product_quantity_id','carts.product_qty_id')
              ->join('products', 'products.product_id', '=', 'carts.product_id')
-             ->where('carts.ip_address',$ip)
-             ->orWhere ('carts.user_id', Auth::user()->id)
+             , $request)
              ->get();
-        }
-        else{
-            $gst = DB::table('carts')
-                     ->join('products', 'products.product_id', '=', 'carts.product_id')
-                     ->where('carts.ip_address',$ip)
-                    ->max('products.product_gst');
-                    
-        $data['cart_data'] = DB::table('carts')
-             ->join('product_quantity','product_quantity.product_quantity_id','carts.product_qty_id')
-             ->join('products', 'products.product_id', '=', 'carts.product_id')
-             ->where('carts.ip_address',$ip)
-             ->get();
-            
-        }
         
         
         $page_title = "Shoping Cart - Zouple";
@@ -149,6 +158,13 @@ class CartController extends Controller
                 $data['proAttributes'][$datas->product_id] = DB::table('product_attributes')->where('product_id',$pro_id)->get();
             }
         }
+
+        foreach($data['cart_data'] as $cartItem)
+        {
+            if (!isset($data['proAttributes'][$cartItem->product_id])) {
+                $data['proAttributes'][$cartItem->product_id] = collect();
+            }
+        }
            
          $total_final_amount = $total_net_amount + $total_pro_gst;
         
@@ -236,9 +252,14 @@ class CartController extends Controller
     
     // Remove Item in Cart
     
-    public function product_remove_cart($id)
+    public function product_remove_cart(Request $request, $id)
     {
-         DB::table('carts')->where('cart_id',$id)->delete();         
+         $deleted = $this->applyCurrentCartOwner(DB::table('carts')->where('cart_id',$id), $request)->delete();
+
+         if (!$deleted) {
+             return Response::json(['message' => 'Cart item was not found.'], 404);
+         }
+
          return 'Your product is remove in your cart';
     }
     
@@ -270,21 +291,18 @@ class CartController extends Controller
          
         $input['product_qty'] = $pro_qty;
      
-        DB::table('carts')->where('cart_id',$cart_id)->update($input);
+        $updated = $this->applyCurrentCartOwner(DB::table('carts')->where('cart_id',$cart_id), $request)->update($input);
+
+        if (!$updated) {
+            return Response::json(['message' => 'Cart item was not found.'], 404);
+        }
         
         return $request;
     }
     //clear Cart 
     public function shopping_cart_clear(Request $request)
     {
-        /*$user_id = Auth::user()->id;*/
-        $ip = $request->ip();
-        if(isset(Auth::user()->id))
-        {
-        DB::table('carts')->where('ip_address',$ip)->orwhere('user_id', Auth::user()->id)->delete();
-        }else{
-            DB::table('carts')->where('ip_address',$ip)->delete();
-        }
+        $this->applyCurrentCartOwner(DB::table('carts'), $request)->delete();
         Session::put('item', 0);
         Session::save();
       return 'Your cart is empty';  
@@ -541,8 +559,7 @@ class CartController extends Controller
     
     public function checkoutSystemCoupenApply(Request $request)
     {
-        $ip = $request->ip();
-        $user_id = Auth::user()->id;
+        $user_id = Auth::id();
         $coupon = $request->coupon;
         $total_amt = $request->total_amt;
         $discount_percent = 0;
@@ -576,11 +593,10 @@ class CartController extends Controller
         $ship_ch = $rupeeShipCh;
         
         //////////////Cart Code ///////////////
-        $datass = DB::table('carts')
+        $datass = $this->applyCurrentCartOwner(DB::table('carts')
              ->join('products', 'products.product_id', '=', 'carts.product_id')
              ->join('product_quantity','product_quantity.product_quantity_id','carts.product_qty_id')
-             ->where('carts.ip_address',$ip)
-             ->orwhere('user_id',$user_id)
+             , $request)
              ->get();
         ////////////Coupon check ////////////////
         $procouponcheck = DB::table('product_coupon')->where('coupon_code',$coupon)->get();

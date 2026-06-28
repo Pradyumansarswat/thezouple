@@ -12,7 +12,7 @@
     </div>
     <div class="row bg-white py-3">
         <div class="col-md-12">
-            @if (count($errors) > 0)
+            @if (isset($errors) && count($errors) > 0)
             <div class="alert alert-danger">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                 <ul>
@@ -68,7 +68,7 @@
                          <div class="col-sm-6">
                             <div class="form-group">
                                   <br>
-                                <img src="{{URL::asset('public/upload/review/'.$data->user_profile)}}" width="50px" height="50px">
+                                <img src="{{ z_media_url($data->user_profile, 'review') }}" width="50px" height="50px">
                             </div>
                         </div>
                         @endif
@@ -88,7 +88,7 @@
                                 ?>
                                 <br>
                                 @foreach($imgs as $val)
-                                <img src="{{URL::asset('public/upload/review/'.$val)}}" width="50px" height="50px">
+                                <img src="{{ z_media_url($val, 'review') }}" width="50px" height="50px">
                                 @endforeach
                             </div>
                         </div>

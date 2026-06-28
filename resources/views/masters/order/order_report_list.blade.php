@@ -5,11 +5,11 @@
             <div>
                 <h1><i class="fa fa-cart-plus"></i> Order Report</h1>
             </div>
-        
+
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -46,8 +46,8 @@
                                         <th colspan="1">
                                             <center>Action</center>
                                         </th>
-                                        
-                                        
+
+
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -57,27 +57,27 @@
                                         <td>{{$i}}.</td>
                                         <td>{{$row->name}}</td>
                                         <td>
-                                          
+
                                             <a href="{{route('orderShow',$row->order_number)}}">{{$row->order_number}}</a>
-                                        
+
                                         </td>
                                         <td>
                                             {{date('d/M/Y - h:i A ', strtotime($row->order_date))}}
-                                           
-                                        
+
+
                                         </td>
                                         <td class="text-center"><b>Order Status - </b>{{$row->order_status}}
-                                            
+
                                         </td>
                                         <td>
-                                            <b>{{$row->user_report}} </b> 
+                                            <b>{{$row->user_report}} </b>
                                         </td>
                                         <td>
                                             <b><?php echo $row->user_description;?> </b>
                                         </td>
 
                                         <td class="text-center">
-                                            
+
                                             <form method="post" action="{{route('remarkSave')}}">
                                                 @csrf
                                                 <div class="row">
@@ -88,7 +88,7 @@
                                                     </div>
                                                 </div>
                                                 <hr>
-                                                
+
                                                 <div class="row">
                                                     <div class="col-sm-12">
                                                         {{$row->mail_subject}}<br>
@@ -103,19 +103,19 @@
                                                     </div>
                                                 </div>
                                                 <hr>
-                                                
-                                                
+
+
                                                 <div class="row">
                                                     <div class="col-sm-12">
                                                         <input type="submit" class="mt-2 form-control text-white form-control mt-2 btn-info" value="Update">
                                                     </div>
                                                 </div>
-                                                
+
                                             </form>
                                         </td>
 
                                         <td class="text-center">
-                                           <a href="{{route('ordersDeletes',$row->order_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a> 
+                                           <a href="{{route('ordersDeletes',$row->order_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                         </td>
                                     </tr>
                                     @php $i++ @endphp
@@ -128,5 +128,5 @@
             </div>
         </div>
     </main>
- 
+
    @stop

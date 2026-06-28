@@ -15,6 +15,7 @@ use App\Accessories;
 use Session;
 use Mail;
 use App\Helper\BasicHelper;
+use App\Services\AdminRecycleBinService;
 
 class BlogController extends Controller
 {
@@ -23,19 +24,21 @@ class BlogController extends Controller
     	$page_title = "Blog - Zouple";
 
 
-    	$data['blog_data'] = DB::table('blog')->orderby('blog_id', 'desc')->paginate(5);
+    	$data['blog_data'] = AdminRecycleBinService::activeTable('blog')->orderby('blog_id', 'desc')->paginate(5);
 
     	return view('front.blog.blog',compact('page_title'), $data); 
     }
 
     public function blogShowPage(Request $request, $slug)
     {
-    	$title = DB::table('blog')->where('slug', $slug)->value('heading');
+    	$blog = AdminRecycleBinService::activeTable('blog')->where('slug', $slug)->first();
+        abort_if(!$blog, 404);
+    	$title = $blog->heading;
     	$page_title =  $title;
-        $meta_description = DB::table('blog')->where('slug',$slug)->value('description');
+        $meta_description = $blog->description;
         $meta_keyword = $title;
 
-    	$data['blogs_datas'] = DB::table('blog')->where('slug', $slug)->get();
+    	$data['blogs_datas'] = AdminRecycleBinService::activeTable('blog')->where('slug', $slug)->get();
 
         if(isset(Auth::user()->id))
         {

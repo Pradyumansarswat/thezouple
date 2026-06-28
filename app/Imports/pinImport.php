@@ -15,9 +15,22 @@ class pinImport implements ToModel,WithHeadingRow
     */
     public function model(array $row)
     {
-        return new Pincode([
-            'pincode' => $row['pincode'],
-            
-        ]);
+        if (empty($row['pincode'])) {
+            return null;
+        }
+
+        $pincode = preg_replace('/\D/', '', (string) $row['pincode']);
+
+        if (strlen($pincode) !== 6) {
+            return null;
+        }
+
+        return Pincode::updateOrCreate(
+            ['pincode' => $pincode],
+            [
+                'city' => isset($row['city']) ? trim((string) $row['city']) : null,
+                'state' => isset($row['state']) ? trim((string) $row['state']) : null,
+            ]
+        );
     }
 }

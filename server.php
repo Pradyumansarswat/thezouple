@@ -38,6 +38,11 @@ if ($uri !== '/' && file_exists($publicPath) && is_file($publicPath)) {
         'ttf' => 'font/ttf',
         'eot' => 'application/vnd.ms-fontobject',
         'map' => 'application/json',
+        'mp4' => 'video/mp4',
+        'mov' => 'video/quicktime',
+        'avi' => 'video/x-msvideo',
+        'wmv' => 'video/x-ms-wmv',
+        'webm' => 'video/webm',
     ];
 
     if (isset($mimeTypes[$extension])) {

@@ -5,13 +5,13 @@
             <div>
                 <h1><i class="fa fa-cart-plus"></i> Order List</h1>
             </div>
-            
-            
-        
+
+
+
         </div>
         <div class="row bg-white py-3">
             <div class="col-md-12">
-                @if (count($errors) > 0)
+                @if (isset($errors) && count($errors) > 0)
                 <div class="alert alert-danger">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
                     <ul>
@@ -32,14 +32,14 @@
                     @endforeach
                 </div>
                 <div class="card-box">
-                    
-                    
-                    
-                    
-                    
+
+
+
+
+
                     <div class="row">
                 <div class="col-sm-6">
-                    <form action="{{route('show_order_status')}}" method="post"> 
+                    <form action="{{route('show_order_status')}}" method="post">
                         @csrf
                         <div class="row">
                             <div class="col-sm-6">
@@ -50,18 +50,18 @@
                                     <option value="Dispatch" @if(isset($order_status)) {{$order_status == "Dispatch"? "selected" : " "}} @endif>Dispatched</option>
                                     <option value="Delivered" @if(isset($order_status)) {{$order_status == "Delivered"? "selected" : " "}} @endif>Delivered</option>
                                 </select>
-                                
+
                             </div>
-                            
+
                             <div class="col-sm-6">
                                 <input type="submit" value="Show" class=" ml-3 btn btn-primary form-control" name="btn_submit">
                             </div>
                         </div>
                     </form>
                 </div>
-                
+
                 <div class="col-sm-6">
-                    <form action="{{route('orderStatusExport')}}" method="post"> 
+                    <form action="{{route('orderStatusExport')}}" method="post">
                         @csrf
                         <div class="row">
                             <div class="col-sm-6">
@@ -70,9 +70,9 @@
                         </div>
                     </form>
                 </div>
-                
+
             </div>
-            
+
             <br>
                     <div class="table-rep-plugin">
                         <div class="table-responsive" data-pattern="priority-columns">
@@ -86,7 +86,7 @@
                                         <!--<th>Product Details </th>-->
                                         <th width="100px">Amount(Rs.)</th>
                                         <!--<th>Payment Status </th>-->
-                                        
+
                                         <th width="100px">Order Date <br> Payment Status</th>
                                         <th class="text-center" width="350px">Order Status </th>
                                         <th colspan="1" width="100px">
@@ -99,8 +99,8 @@
                                     @foreach($order_data as $row)
                                     <tr>
                                         <td>{{$i}}.</td>
-                                         
-                                           <?php 
+
+                                           <?php
                                             $status_name=$row->status;
                                             if($status_name == 0)
                                             {
@@ -111,13 +111,13 @@
                                               $status="text-dark ";
                                             }
                                             ?>
-                                        <!--<td class = "<?php echo $status; ?>"> 
+                                        <!--<td class = "<?php echo $status; ?>">
                                             {{$row->name}}
                                         </td>-->
                                         <td class="<?php echo $status; ?>">
-                                          
+
                                             <a href="{{route('orderShow',$row->order_number)}}">{{$row->order_number}}</a>
-                                        
+
                                         </td>
                                        <!-- <td>{{$row->order_type}}</td>-->
                                        <!-- <td>
@@ -133,12 +133,12 @@
                                                 $product_details = json_decode($row->product_details);
                                                 ?>
                                                 @foreach($product_details as $key => $pros)
-                                                <?php 
+                                                <?php
                                                 $pro_dets = explode('-',$pros);
                                                 $sub_total = $pro_dets[1] * $pro_dets[2];
                                                 ?>
                                                 <tr>
-                                                    <td>{{$proTitle[$key]}}</td>
+                                                    <td>{{ $proTitle[$key] ?? '' }}</td>
                                                     <td class="text-center">{{$pro_dets[0]}}</td>
                                                     <td class="text-center">{{$pro_dets[1]}}</td>
                                                 </tr>
@@ -149,7 +149,7 @@
                                                 <tr>
                                                     <th>Elements Type</th>
                                                     <th>Elements Value</th>
-                                                   
+
 
                                                 </tr>
                                                 <?php
@@ -164,9 +164,9 @@
                                                     </td>
                                                     <td>
                                                         @if($key == "febric" || $key == "FEBRIC" || $key == "Febric")
-                                                        {{$febricName[$dt]}}
+                                                        {{ $febricName[$dt] ?? '' }}
                                                         @else
-                                                        {{$elementValueName[$dt]}}
+                                                        {{ $elementValueName[$dt] ?? '' }}
                                                         @endif
                                                     </td>
                                                 </tr>
@@ -190,26 +190,26 @@
                                                 <input type="submit" value="Update" class="form-control mt-2 btn-info">
                                             </form> -->
                                         </td>
-                                        
+
                                         <td>
                                             {{date('d/M/Y - h:i A ', strtotime($row->order_date))}} <br> {{$row->payment_status}}
-                                           
-                                        
+
+
                                         </td>
-                                        
+
                                         <td class="text-center"><b>Order Status - </b>{{$row->order_status}}
                                             <br>
                                             @if($row->order_status != "Accepted" && $row->order_status != "Rejected" && $row->order_status != "Delivered" && $row->order_status != "Pending")
                                             <b>Tracking Number - </b>{{$row->tracking_number}}<br>
-                                            
+
                                             <b>Tracking URL - </b> {{$row->tracking_url}}<br>
                                             @endif
                                             <b>Update Date - </b>{{$row->order_update_date}}
-                                            
+
                                             <form class="mt-4" action="{{route('order_status_update')}}" method="post">
-                                                @csrf 
+                                                @csrf
                                                 <input type="hidden" name="order_id" value="{{$row->order_id}}">
-                                                
+
                                                 <input type="hidden" name="status" value="1">
                                                 <div class="row">
                                                     <div class="col-sm-6">
@@ -225,28 +225,28 @@
                                                         <input type="text" name="tracking_number" placeholder="Tracking Number" class="form-control">
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="row">
                                                     <div class="col-sm-6">
-                                                        <input type="date" name="order_update_date"  class="form-control mt-3" required> 
+                                                        <input type="date" name="order_update_date"  class="form-control mt-3" required>
                                                     </div>
                                                     <div class="col-sm-6">
                                                         <input type="text" name="tracking_url" placeholder="Tracking Url" class="form-control mt-3">
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="row">
                                                     <div class="col-sm-12">
                                                         <input type="submit" value="Update" class="form-control mt-2 btn-info">
                                                     </div>
                                                 </div>
-                                                
-                                                
-                                            </form> 
+
+
+                                            </form>
                                         </td>
-                                        
+
                                         <td class="text-center">
-                                           <a href="{{route('orderDelete',$row->order_id)}}" onClick="return confirm('Are you sure?');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a> 
+                                           <a href="{{route('orderDelete',$row->order_id)}}" onClick="return confirm('Are you sure? This item will move to Recycle Bin.');"><span class="basic_table_icon" style="font-size: 20px;color: red;margin-left: 20px;"><i class="fa fa-trash-o" aria-hidden="true"></i></span></a>
                                            <a href="{{route('orderOldMessage',$row->order_id)}}" class="text-white"><button class="btn btn-primary form-control"> older msg</a>
                                         </td>
                                     </tr>
@@ -260,5 +260,5 @@
             </div>
         </div>
     </main>
- 
+
    @stop

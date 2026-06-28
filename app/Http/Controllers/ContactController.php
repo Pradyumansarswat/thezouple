@@ -9,6 +9,7 @@ use Validator;
 use DB;
 use Session;
 use Mail;
+use App\Services\AdminRecycleBinService;
 
 class ContactController extends Controller
 {
@@ -36,7 +37,7 @@ class ContactController extends Controller
     public function aboutPage(Request $request)
     {
        $page_title = "About us - thezouple.com";
-        $data['about_data'] = DB::table('about')->orderby('about_id', 'asc')->get();
+        $data['about_data'] = AdminRecycleBinService::activeTable('about')->orderby('about_id', 'asc')->get();
         return view('front.about.about',compact('page_title'), $data); 
     }
     

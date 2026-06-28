@@ -58,7 +58,7 @@
             <a href="{{url('product', $data->slug)}}">
                  <div class="card " style="border-radius: 15px; overflow: hidden;">
                                 <div class="card-body p-0 position-relative">
-                        <img src="{{URL::asset('public/upload/product/'.$data->product_header_image)}}" width="100%">
+                        <img src="{{ z_media_url($data->product_header_image, 'product') }}" width="100%">
 
 
                         

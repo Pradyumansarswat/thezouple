@@ -8,12 +8,14 @@ use App\Http\Controllers\Controller;
 use Auth,Redirect,View,File,Config,Image;
 use Validator;
 use DB; 
+use App\Services\AdminRecycleBinService;
+use App\Services\AdminMediaService;
 
 class TestimonialController extends Controller
 {
     public function testimonialList(Request $request)
     {
-        $users['testimonial_data'] = DB::table('testimonial')->orderBy('testimonial_id', 'asc')->get();
+        $users['testimonial_data'] = DB::table('testimonial')->whereNull('deleted_at')->orderBy('testimonial_id', 'asc')->get();
         $page_title = "Testimonial List - Zouple";
        return view('masters.testimonial.testimonial',compact('page_title'),$users);
     }
@@ -25,59 +27,100 @@ class TestimonialController extends Controller
        return view('masters.testimonial.add_testimonial',compact('page_title'));
     }
 
-    public function testimonialStore(Request $request)
+  public function testimonialStore(Request $request)
    {
-      $input = $request->all();
+      $this->validate($request, [
+          'name' => 'required|string|max:255',
+          'heading' => 'required|string|max:500',
+          'description' => 'required|string|max:2000',
+          'image' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:4096',
+      ], [
+          'image.required' => 'Please upload a testimonial image.',
+          'image.image' => 'The testimonial file must be a valid image.',
+          'image.mimes' => 'Please upload JPG, PNG, GIF, or WebP image only.',
+          'image.max' => 'The testimonial image must be 4 MB or smaller.',
+      ]);
+
+      $input = $this->safeInput($request);
+      $input['_token'] = $request->input('_token') ?: md5(uniqid('', true));
        
         /*$this->validate($request , array
          (    
              'image' => 'required|dimensions:min_width=1920,min_height=700',
          ));*/ 
-      if($request->file('image')!='')
+      if($request->hasFile('image') && $request->file('image')->isValid())
       {
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
-          
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/testimonial/');       
-          $request->file('image')->move($destinationPath, $imgname);
-         
-      } 
-           DB::table('testimonial')->insert($input);
-            $request->session()->flash('alert-success','Testimonial has been sucessfully added.');
-            return Redirect::route('testimonial');   
+          try {
+              $input['image'] = $this->storeTestimonialImage($request->file('image'));
+          } catch (\Exception $e) {
+              $request->session()->flash('alert-danger','The image could not be saved. Please check the file and try again.');
+              return Redirect::back()->withInput();
+          }
+      }
+
+      if (empty($input['image'])) {
+          $request->session()->flash('alert-danger','The image was not saved. Please choose a valid image and try again.');
+          return Redirect::back()->withInput();
+      }
+
+      try {
+          DB::table('testimonial')->insert($input);
+      } catch (\Exception $e) {
+          $this->deleteTestimonialImage($input['image']);
+          $request->session()->flash('alert-danger','The testimonial could not be saved. Please try again.');
+          return Redirect::back()->withInput();
+      }
+
+      $request->session()->flash('alert-success','Testimonial has been successfully added.');
+      return Redirect::route('testimonial');   
    }
 
    public function testimonialUpdatePage(Request $request,$testimonial_id)
   {
-      $users['testimonial_datas'] = DB::table('testimonial')->where('testimonial_id',$testimonial_id)->get();
+      $users['testimonial_datas'] = AdminRecycleBinService::activeTable('testimonial')->where('testimonial_id',$testimonial_id)->get();
       $page_title = "Edit Testimonial - Zouple";
       return view('masters.testimonial.edit_testimonial',compact('page_title'),$users);
   }
 
   public function testimonialEditUpdate(Request $request)
     {
-      $input = $request->all();
       $testimonial_id = $request->testimonial_id;
+      $currentImage = DB::table('testimonial')->where('testimonial_id','=',$testimonial_id)->value('image');
+      $currentImagePath = public_path('upload/testimonial/').$currentImage;
+      $needsImage = empty($currentImage) || (!preg_match('#^https?://#i', $currentImage) && !File::exists($currentImagePath));
+
+      $this->validate($request, [
+          'testimonial_id' => 'required|integer',
+          'name' => 'required|string|max:255',
+          'heading' => 'required|string|max:500',
+          'description' => 'required|string|max:2000',
+          'image' => ($needsImage ? 'required' : 'nullable') . '|image|mimes:jpeg,jpg,png,gif,webp|max:4096',
+      ], [
+          'image.required' => 'Please upload a testimonial image because this testimonial does not have a saved image.',
+          'image.image' => 'The testimonial file must be a valid image.',
+          'image.mimes' => 'Please upload JPG, PNG, GIF, or WebP image only.',
+          'image.max' => 'The testimonial image must be 4 MB or smaller.',
+      ]);
+
+      $input = $this->safeInput($request);
     /*$this->validate($request , array
      (    
          'image' => 'required|dimensions:min_width=1920,min_height=700',
      )); */
-      if($request->file('image')!='')
+      $oldImageToDelete = null;
+      if($request->hasFile('image') && $request->file('image')->isValid())
       {
           $data=DB::table('testimonial')->where('testimonial_id','=',$testimonial_id)->value('image');
-          $fullpath=public_path('upload/testimonial/').$data;
-          File::delete($fullpath);
-          
-          $file=$request->file('image');
-          $filename=$file->getClientOriginalName();
-          $imgname = uniqid().$filename;
+          try {
+              $input['image'] = $this->storeTestimonialImage($request->file('image'));
+          } catch (\Exception $e) {
+              $request->session()->flash('alert-danger','The image could not be saved. Please check the file and try again.');
+              return Redirect::back()->withInput();
+          }
 
-          $input['image']= $imgname;       
-          $destinationPath=public_path('upload/testimonial/');       
-          $request->file('image')->move($destinationPath, $imgname);
-
+          if($data && $data !== $input['image']) {
+              $oldImageToDelete = $data;
+          }
       } 
       
       else
@@ -85,9 +128,21 @@ class TestimonialController extends Controller
           unset($input['image']);
       }
       
-       DB::table('testimonial')->where('testimonial_id','=',$testimonial_id)->update($input);
+      try {
+          DB::table('testimonial')->where('testimonial_id','=',$testimonial_id)->update($input);
+      } catch (\Exception $e) {
+          if (!empty($input['image'])) {
+              $this->deleteTestimonialImage($input['image']);
+          }
+          $request->session()->flash('alert-danger','The testimonial could not be updated. Please try again.');
+          return Redirect::back()->withInput();
+      }
 
-        $request->session()->flash('alert-success','Testimonial has been sucessfully updated.');
+      if ($oldImageToDelete) {
+          $this->deleteTestimonialImage($oldImageToDelete);
+      }
+
+        $request->session()->flash('alert-success','Testimonial has been successfully updated.');
         return Redirect::route('testimonial');
     
 
@@ -95,12 +150,43 @@ class TestimonialController extends Controller
 
     public function testimonialDeleteFormat(Request $request,$testimonial_id)
   {
-      $data=DB::table('testimonial')->where('testimonial_id','=',$testimonial_id)->value('image');
-      $fullpath=public_path('upload/testimonial/').$data;
-      File::delete($fullpath);
-      $m = DB::table('testimonial')->where('testimonial_id','=',$testimonial_id)->delete();
-      $request->session()->flash('alert-success','Testimonial has been sucessfully deleted.
-');
+      AdminRecycleBinService::softDelete('testimonials', $testimonial_id);
+      $request->session()->flash('alert-success','Testimonial moved to Recycle Bin.');
       return Redirect::route('testimonial');
+  }
+
+  private function safeInput(Request $request)
+  {
+      $input = array_merge($request->query->all(), $request->request->all());
+      unset($input['existing_image']);
+      unset($input['_token']);
+      unset($input['testimonial_id']);
+
+      return $input;
+  }
+
+  private function makeImageName($filename)
+  {
+      $name = pathinfo($filename, PATHINFO_FILENAME);
+      $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+      $safeName = trim(preg_replace('/[^A-Za-z0-9_-]+/', '-', $name), '-');
+
+      return time() . '_' . mt_rand(100000, 999999) . '_' . ($safeName ?: 'testimonial') . '.' . $extension;
+  }
+
+  private function storeTestimonialImage($file)
+  {
+      $upload = app(AdminMediaService::class)->uploadImage($file, 'testimonials', 'testimonial');
+      return $upload['path'];
+  }
+
+  private function deleteTestimonialImage($filename)
+  {
+      $filename = trim((string) $filename);
+      if ($filename === '') {
+          return;
+      }
+
+      app(AdminMediaService::class)->deleteMedia($filename, 'testimonial', null, 'image');
   }
 }
