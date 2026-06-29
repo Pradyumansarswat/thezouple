@@ -202,7 +202,7 @@ for (var i = 0, l = videos.length; i < l; i++) {
     <div class="container-fluid">
         <div class="row  maxWidhtContainer">
             <div class="col-12   text-center headpadding">
-                <div class="h5 m-0 font-weight-bold headStyle">Zouple Shirts</div>
+                <div class="h5 m-0 font-weight-bold headStyle">Premium Home & Office Signage</div>
             </div>
 
         </div>
