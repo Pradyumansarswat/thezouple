@@ -15,6 +15,14 @@ $app = new Illuminate\Foundation\Application(
     $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
 );
 
+$app->singleton(Illuminate\Foundation\PackageManifest::class, function ($app) {
+    return new App\Support\PackageManifest(
+        new Illuminate\Filesystem\Filesystem,
+        $app->basePath(),
+        $app->getCachedPackagesPath()
+    );
+});
+
 /*
 |--------------------------------------------------------------------------
 | Bind Important Interfaces
