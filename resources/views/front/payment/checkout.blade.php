@@ -625,6 +625,11 @@
                                 </div>
                                 <?php $ttl_net_amt = 0;?>
                                 @foreach($cart_data as $data)
+                                @php
+                                    $cartAttributes = $proAttributes[$data->product_id] ?? collect();
+                                    $cartSelectedAttributes = json_decode($data->attributes_value, true);
+                                    $cartSelectedAttributes = is_array($cartSelectedAttributes) ? $cartSelectedAttributes : [];
+                                @endphp
                                 <div class="row py-1 my-2 border zouple-cart-item zouple-checkout-item">
                                     <div class="col-4 col-sm-2 p-0">
                                         <img src="{{ z_media_url($data->product_header_image, 'product') }}" width="100%" class="zouple-cart-image">
@@ -635,13 +640,11 @@
                                         <small class="text-danger zouple-cart-note">Prices are inclusive all taxes.<!--of {{$data->product_gst}}% GST--></small>
                                         </div>
                                         <div class="row zouple-cart-attributes">
-                                            @foreach($proAttributes[$data->product_id] as $attValue)
+                                            @foreach($cartAttributes as $attValue)
                                             @if($attValue->attribute_name != "Self")
                                             <div class=" py-2 col-12 col-sm-6  col-md-6 text-danger">
                                             <?php
-                                            
-                                            $car_att = json_decode($data->attributes_value);
-                                            foreach($car_att as $dt)
+                                            foreach($cartSelectedAttributes as $dt)
                                             {
                                                 echo $dt;
                                             }

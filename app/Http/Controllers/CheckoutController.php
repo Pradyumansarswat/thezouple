@@ -101,6 +101,7 @@ class CheckoutController extends Controller
          $total_discount = $request->discountAmount;
          $discountper = $request->discountCouponFetchData;*/
          $page_title = "Cart Checkout - Zouple";
+         $data['proAttributes'] = [];
 
         $data['buynow_shipping_list'] = DB::table('user_information')
                 ->join('users','users.id','user_information.user_id')
@@ -222,6 +223,13 @@ class CheckoutController extends Controller
             {
                 $pro_id = $datas->product_id;
                 $data['proAttributes'][$datas->product_id] = DB::table('product_attributes')->where('product_id',$pro_id)->get();
+            }
+        }
+
+        foreach($data['cart_data'] as $cartItem)
+        {
+            if (!isset($data['proAttributes'][$cartItem->product_id])) {
+                $data['proAttributes'][$cartItem->product_id] = collect();
             }
         }
 
