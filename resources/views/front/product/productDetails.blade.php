@@ -284,7 +284,7 @@
             .attr('max', availableQty > 0 ? availableQty : 1)
             .prop('disabled', availableQty <= 0);
 
-        $('.btn-num-product-down, .btn-num-product-up')
+        $('.zouple-qty-down, .zouple-qty-up')
             .prop('disabled', availableQty <= 0)
             .toggleClass('disabled', availableQty <= 0);
 
@@ -782,13 +782,13 @@
             <div class="row mx-3 py-2">
                 <div class="col-12 col-sm-4 py-2  priceCart2">
                     <div class="flex-w bo5 of-hidden zouple-qty-control">
-                        <button type="button" class="btn-num-product-down" style="background-color:black;" onclick="changeQuantity('min')" @if($proQty <= 0) disabled @endif>
+                        <button type="button" class="zouple-qty-down" style="background-color:black;" onclick="changeQuantity('min')" @if($proQty <= 0) disabled @endif>
                             <i class="fs-12 fa fa-minus text-white" aria-hidden="true"></i>
                         </button>
 
                         <input class=" w-25 text-center num-product" type="number" name="qty" value="1" min="1" max="{{ $proQty > 0 ? $proQty : 1 }}" id="qty" onkeyup="changeQuantity('equal')" onblur="changeQuantity('equal', true)" @if($proQty <= 0) disabled @endif>
 
-                        <button type="button" class="btn-num-product-up " style="background-color:black;" onclick="changeQuantity('max')" @if($proQty <= 0) disabled @endif>
+                        <button type="button" class="zouple-qty-up" style="background-color:black;" onclick="changeQuantity('max')" @if($proQty <= 0) disabled @endif>
                             <i class="fs-12 fa fa-plus text-white" aria-hidden="true"></i>
                         </button>
                     </div>

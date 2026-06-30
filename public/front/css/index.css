@@ -2643,7 +2643,9 @@ input:focus {
 }
 
 .btn-num-product-down,
-.btn-num-product-up {
+.btn-num-product-up,
+.zouple-qty-down,
+.zouple-qty-up {
     border: 0 !important;
     background: var(--zouple-ink) !important;
     color: #fff !important;
@@ -2654,7 +2656,11 @@ input:focus {
 .btn-num-product-down:disabled,
 .btn-num-product-up:disabled,
 .btn-num-product-down.disabled,
-.btn-num-product-up.disabled {
+.btn-num-product-up.disabled,
+.zouple-qty-down:disabled,
+.zouple-qty-up:disabled,
+.zouple-qty-down.disabled,
+.zouple-qty-up.disabled {
     cursor: not-allowed;
     opacity: .45;
 }

@@ -476,13 +476,13 @@
                             
                             
                             <!--<div class="flex-w bo5 of-hidden">
-                                <button type="button" class="btn-num-product-down" style="background-color:black;" onclick="changeQuantity('min')">
+                                <button type="button" class="zouple-qty-down" style="background-color:black;" onclick="changeQuantity('min')">
                                     <i class="fs-12 fa fa-minus text-white" aria-hidden="true"></i>
                                 </button>
         
                                 <input class=" w-25 text-center num-product" type="number" name="qty" value="1" id="qty" min="1" onkeyup="changeQuantity('equal')" onblur="changeQuantity('equal', true)">
         
-                                <button type="button" class="btn-num-product-up " style="background-color:black;" onclick="changeQuantity('max')">
+                                <button type="button" class="zouple-qty-up" style="background-color:black;" onclick="changeQuantity('max')">
                                     <i class="fs-12 fa fa-plus text-white" aria-hidden="true"></i>
                                 </button>
                             </div>-->

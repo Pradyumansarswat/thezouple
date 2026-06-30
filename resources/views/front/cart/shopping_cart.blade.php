@@ -339,13 +339,13 @@
                     <!--<div class="col-12 col-sm-8 py-2  px-0 d-flex align-self-center priceCart2">
 
                         <div class="flex-w bo5 of-hidden">
-                            <button type="button" class="btn-num-product-down" style="background-color:black;" onclick="updateProductQty({{$i}},'min')">
+                            <button type="button" class="zouple-qty-down" style="background-color:black;" onclick="updateProductQty({{$i}},'min')">
                                 <i class="fs-12 fa fa-minus text-white" aria-hidden="true" aria-hidden="true"></i>
                             </button>
 
                             <input class=" w-25 text-center num-product" type="number" name="num-product1" value="{{$data->product_qty}}" id="qty{{$i}}" min="1" onkeyup="updateProductQty({{$i}},'sam')" onblur="updateProductQty({{$i}},'sam', true)">
 
-                            <button type="button" class="btn-num-product-up " style="background-color:black;" onclick="updateProductQty({{$i}},'max')">
+                            <button type="button" class="zouple-qty-up" style="background-color:black;" onclick="updateProductQty({{$i}},'max')">
                                 <i class="fs-12 fa fa-plus text-white" aria-hidden="true"></i>
                             </button>
                         </div>
