@@ -148,13 +148,13 @@ for (var i = 0, l = videos.length; i < l; i++) {
                     <small>Designed for daily wear</small>
                 </span>
             </div>
-            <div class="col-6 col-md-3 zouple-trust-item">
+            <a class="col-6 col-md-3 zouple-trust-item text-decoration-none" href="{{ $bulk_whatsapp_link ?? z_whatsapp_link('', 'Hello Zouple, I want to enquire about bulk order.') }}" target="_blank" rel="noopener" aria-label="Contact Zouple on WhatsApp for bulk enquiry">
                 <span class="zouple-trust-icon"><i class="fa fa-whatsapp"></i></span>
                 <span>
                     <strong>Bulk Support</strong>
                     <small>Quick WhatsApp enquiry</small>
                 </span>
-            </div>
+            </a>
         </div>
     </div>
 </section>
@@ -879,8 +879,10 @@ for (var i = 0, l = videos.length; i < l; i++) {
 
         <div class="col-12 bulk-enquiry-wrapper">
 
-            <a href="{{ $bulk_whatsapp_link ?? 'https://wa.me/?text=Hello%20Zouple%2C%20I%20want%20to%20enquire%20about%20bulk%20order.' }}"
+            <a href="{{ $bulk_whatsapp_link ?? z_whatsapp_link('', 'Hello Zouple, I want to enquire about bulk order.') }}"
                target="_blank"
+               rel="noopener"
+               aria-label="Send bulk order enquiry to Zouple on WhatsApp"
                class="bulk-enquiry-btn">
 
                 <div class="icon"><i class="fa fa-whatsapp"></i></div>

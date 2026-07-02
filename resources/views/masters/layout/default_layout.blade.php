@@ -245,8 +245,8 @@
             }
 
             if (name === 'video') {
-              if (videoExts.indexOf(ext) === -1 || file.size > 100 * 1024 * 1024) {
-                return 'Video must be MP4, MOV, AVI, WMV, or WebM and 100 MB or smaller.';
+              if (videoExts.indexOf(ext) === -1 || file.size > 200 * 1024 * 1024) {
+                return 'Video must be MP4, MOV, AVI, WMV, or WebM and 200 MB or smaller.';
               }
               continue;
             }

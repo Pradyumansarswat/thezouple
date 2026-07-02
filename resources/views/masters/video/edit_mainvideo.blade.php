@@ -53,8 +53,8 @@
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label"> Main Video </label>
-                                <input class="form-control js-video-upload-input" type="file" name="video" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/webm" data-max-size-mb="100">
-                                <small class="form-text text-muted">Upload MP4, MOV, AVI, WMV, or WebM up to 100 MB.</small>
+                                <input class="form-control js-video-upload-input" type="file" name="video" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/webm" data-max-size-mb="200">
+                                <small class="form-text text-muted">Upload MP4, MOV, AVI, WMV, or WebM up to 200 MB.</small>
                             </div>
                             @if(!empty($data->video))
                             <div class="form-group">

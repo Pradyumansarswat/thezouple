@@ -44,7 +44,7 @@ class HomeController extends Controller
         
        $siteInfo = Schema::hasTable('siteinfos') ? DB::table('siteinfos')->where('siteinfo_id', 1)->first() : null;
        $whatsappNumber = $siteInfo && !empty($siteInfo->whatsapp_number) ? $siteInfo->whatsapp_number : ($siteInfo->phone_number ?? '');
-       $data['bulk_whatsapp_link'] = 'https://wa.me/' . preg_replace('/\D+/', '', $whatsappNumber) . '?text=' . rawurlencode('Hello Zouple, I want to enquire about bulk order.');
+       $data['bulk_whatsapp_link'] = z_whatsapp_link($whatsappNumber, 'Hello Zouple, I want to enquire about bulk order.');
        $data['blog_data'] = collect([]);
         
        $data['main_video'] = Schema::hasTable('video') ? AdminRecycleBinService::activeTable('video')->get() : collect([]);

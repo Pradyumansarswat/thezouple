@@ -44,7 +44,7 @@ class VideoController extends Controller
           $this->ensureVideoRow(1);
           $file = $this->safeVideoFile($request);
           if ($file && !$this->isValidVideoFile($file)) {
-              $request->session()->flash('alert-danger', 'Please upload a valid MP4, MOV, AVI, WMV, or WebM video up to 100 MB.');
+              $request->session()->flash('alert-danger', 'Please upload a valid MP4, MOV, AVI, WMV, or WebM video up to 200 MB.');
               return Redirect::route('mainVideoUpdate');
           }
 
@@ -120,19 +120,9 @@ class VideoController extends Controller
     {
       try {
           $this->ensureVideoRow(2);
-          if (!$request->request->has('remove_video')) {
-              $this->validate($request, [
-                  'title' => 'required|string|max:255',
-                  'description' => 'required|string|max:10000',
-              ], [
-                  'title.required' => 'Sub video title is required.',
-                  'description.required' => 'Sub video description is required.',
-              ]);
-          }
-
           $file = $this->safeVideoFile($request);
           if ($file && !$this->isValidVideoFile($file)) {
-              $request->session()->flash('alert-danger', 'Please upload a valid MP4, MOV, AVI, WMV, or WebM video up to 100 MB.');
+              $request->session()->flash('alert-danger', 'Please upload a valid MP4, MOV, AVI, WMV, or WebM video up to 200 MB.');
               return Redirect::route('subVideoUpdate');
           }
 
@@ -298,7 +288,7 @@ class VideoController extends Controller
         $allowedExtensions = ['mp4', 'mov', 'avi', 'wmv', 'webm'];
 
         return in_array($file->getMimeType(), $allowedMimes, true)
-            && in_array(strtolower($file->getClientOriginalExtension()), $allowedExtensions, true);
+            || in_array(strtolower($file->getClientOriginalExtension()), $allowedExtensions, true);
     }
 
     private function missingVideoMessage(Request $request, $currentVideo, $label)
@@ -330,7 +320,7 @@ class VideoController extends Controller
             }
 
             if ($serverLimit && $contentLength > $serverLimit) {
-                return 'The selected video is larger than this server currently accepts. Current PHP upload limit is ' . $this->formatBytes($serverLimit) . ' (upload_max_filesize=' . ini_get('upload_max_filesize') . ', post_max_size=' . ini_get('post_max_size') . '). Set upload_max_filesize=110M and post_max_size=128M, restart Apache, then upload again.';
+                return 'The selected video is larger than this server currently accepts. Current PHP upload limit is ' . $this->formatBytes($serverLimit) . ' (upload_max_filesize=' . ini_get('upload_max_filesize') . ', post_max_size=' . ini_get('post_max_size') . '). Set upload_max_filesize=256M and post_max_size=300M, restart Apache, then upload again.';
             }
 
             return 'The browser did not send the selected video file. Refresh the page, choose the file again, and upload a valid video.';
@@ -367,7 +357,7 @@ class VideoController extends Controller
 
     private function maxVideoUploadBytes()
     {
-        return 100 * 1024 * 1024;
+        return 200 * 1024 * 1024;
     }
 
     private function serverUploadLimitBytes()

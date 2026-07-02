@@ -87,3 +87,29 @@ if (!function_exists('z_media_exists')) {
         return file_exists(public_path('uploads/' . $value)) || file_exists(public_path('upload/' . $value));
     }
 }
+
+if (!function_exists('z_whatsapp_number')) {
+    function z_whatsapp_number($number)
+    {
+        $digits = preg_replace('/\D+/', '', (string) $number);
+        $digits = preg_replace('/^00/', '', $digits);
+        $digits = ltrim($digits, '0');
+
+        if (strlen($digits) === 10) {
+            return '91' . $digits;
+        }
+
+        return $digits;
+    }
+}
+
+if (!function_exists('z_whatsapp_link')) {
+    function z_whatsapp_link($number, $message = null)
+    {
+        $phone = z_whatsapp_number($number ?: '6375134498');
+        $message = $message ?: 'Hello Zouple, I want to enquire about bulk order.';
+        $query = $phone ? ('phone=' . rawurlencode($phone) . '&') : '';
+
+        return 'https://api.whatsapp.com/send?' . $query . 'text=' . rawurlencode($message);
+    }
+}

@@ -100,8 +100,8 @@ class AdminMediaService
         if ($resourceType === 'video') {
             $allowedExtensions = ['mp4', 'mov', 'avi', 'wmv', 'webm'];
             $allowedMimes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/webm', 'application/octet-stream'];
-            $maxBytes = 100 * 1024 * 1024;
-            $label = 'MP4, MOV, AVI, WMV, or WebM video up to 100 MB';
+            $maxBytes = 200 * 1024 * 1024;
+            $label = 'MP4, MOV, AVI, WMV, or WebM video up to 200 MB';
         } else {
             $allowedExtensions = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'bmp'];
             $allowedMimes = ['image/jpeg', 'image/pjpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/x-ms-bmp'];

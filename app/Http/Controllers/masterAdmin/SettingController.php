@@ -227,6 +227,9 @@ class SettingController extends Controller
             'recycle_cleanup_days' => 'required|in:30,60,90',
         ]);
         $input = $request->all();
+        if (!empty($input['whatsapp_number'])) {
+            $input['whatsapp_number'] = z_whatsapp_number($input['whatsapp_number']);
+        }
        Siteinfo::where('siteinfo_id',1)->update($input);
 
         $request->session()->flash('alert-success','Site Information Code has been sucessfully updated.');

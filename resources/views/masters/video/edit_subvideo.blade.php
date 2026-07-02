@@ -53,8 +53,8 @@
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label class="control-label"> Sub Video </label>
-                                <input class="form-control js-video-upload-input" type="file" name="video" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/webm" data-max-size-mb="100">
-                                <small class="form-text text-muted">Upload MP4, MOV, AVI, WMV, or WebM up to 100 MB.</small>
+                                <input class="form-control js-video-upload-input" type="file" name="video" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-ms-wmv,video/webm" data-max-size-mb="200">
+                                <small class="form-text text-muted">Upload MP4, MOV, AVI, WMV, or WebM up to 200 MB.</small>
                             </div>
                             @if(!empty($data->video))
                             <div class="form-group">
@@ -67,15 +67,15 @@
 
                         <div class="col-sm-6">
                             <div class="form-group">
-                                <label class="control-label"> Title <span class="text-danger">*</span></label>
-                                <input class="form-control" type="text" name="title" value="{{$data->title}}" required>
+                                <label class="control-label"> Title <small class="text-muted">(optional)</small></label>
+                                <input class="form-control" type="text" name="title" value="{{$data->title}}">
                             </div>
                         </div>
 
                         <div class="col-sm-12">
                             <div class="form-group">
-                                <label class="control-label"> Description <span class="text-danger">*</span></label>
-                                <textarea id="summary-ckeditor" name="description" class="form-control" required><?php echo $data->description; ?></textarea>
+                                <label class="control-label"> Description <small class="text-muted">(optional)</small></label>
+                                <textarea id="summary-ckeditor" name="description" class="form-control"><?php echo $data->description; ?></textarea>
                             </div>
                         </div>
 
